@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -25,46 +25,51 @@ using netDxf.Collections;
 
 namespace netDxf.Tables
 {
-
     /// <summary>
-    /// Represents a registered application name to which the <see cref="netDxf.XData">extended data</see> is associated.
+    /// Represents a registered application name to which the <see cref="XData">extended data</see> is associated.
     /// </summary>
+    /// <remarks>
+    /// Do not use the default "ACAD" application registry name for your own extended data, it is sometimes used by AutoCad to store internal data.
+    /// Instead, create your own application registry name and store your extended data there.
+    /// </remarks>
     public class ApplicationRegistry :
         TableObject
     {
-        #region private fields
-
-        private static readonly ApplicationRegistry defaultApp;
-
-        #endregion
-
         #region constants
+
+        /// <summary>
+        /// Default application registry name.
+        /// </summary>
+        public const string DefaultName = "ACAD";
 
         /// <summary>
         /// Gets the default application registry.
         /// </summary>
-        internal static ApplicationRegistry Default
+        public static ApplicationRegistry Default
         {
-            get { return defaultApp; }
+            get { return new ApplicationRegistry(DefaultName); }
         }
 
         #endregion
 
         #region constructors
 
-        static ApplicationRegistry()
-        {
-            defaultApp = new ApplicationRegistry("ACAD");
-        }
-
         /// <summary>
         /// Initializes a new instance of the <c>ApplicationRegistry</c> class.
         /// </summary>
         /// <param name="name">Layer name.</param>
         public ApplicationRegistry(string name)
-            : base(name, DxfObjectCode.AppId, true)
+            : this(name, true)
         {
-            this.reserved = name.Equals("ACAD", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal ApplicationRegistry(string name, bool checkName)
+            : base(name, DxfObjectCode.AppId, checkName)
+        {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentNullException(nameof(name), "The application registry name should be at least one character long.");
+
+            this.IsReserved = name.Equals(DefaultName, StringComparison.OrdinalIgnoreCase);
         }
 
         #endregion
@@ -72,12 +77,12 @@ namespace netDxf.Tables
         #region public properties
 
         /// <summary>
-        /// Gets the owner of the actual dxf object.
+        /// Gets the owner of the actual DXF object.
         /// </summary>
         public new ApplicationRegistries Owner
         {
-            get { return (ApplicationRegistries)this.owner; }
-            internal set { this.owner = value; }
+            get { return (ApplicationRegistries) base.Owner; }
+            internal set { base.Owner = value; }
         }
 
         #endregion
@@ -85,46 +90,27 @@ namespace netDxf.Tables
         #region overrides
 
         /// <summary>
-        /// Determines whether the specified <see cref="netDxf.Tables.ApplicationRegistry" /> is equal to the current <see cref="netDxf.Tables.ApplicationRegistry" />.
+        /// Creates a new ApplicationRegistry that is a copy of the current instance.
         /// </summary>
-        /// <returns>
-        /// True if the specified <see cref="netDxf.Tables.ApplicationRegistry" /> is equal to the current <see cref="netDxf.Tables.ApplicationRegistry" />; otherwise, false.
-        /// </returns>
-        /// <remarks>Two <see cref="netDxf.Tables.ApplicationRegistry" /> instances are equal if their names are equal.</remarks>
-        /// <exception cref="T:System.NullReferenceException">
-        /// The <paramref name="obj" /> parameter is null.
-        /// </exception>
-        public bool Equals(ApplicationRegistry obj)
+        /// <param name="newName">ApplicationRegistry name of the copy.</param>
+        /// <returns>A new ApplicationRegistry that is a copy of this instance.</returns>
+        public override TableObject Clone(string newName)
         {
-            return obj.Name == this.Name;
+            ApplicationRegistry copy = new ApplicationRegistry(newName);
+
+            foreach (XData data in this.XData.Values)
+                copy.XData.Add((XData)data.Clone());
+
+            return copy ;
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="T:System.Object" /> is equal to the current <see cref="T:System.Object" />.
+        /// Creates a new ApplicationRegistry that is a copy of the current instance.
         /// </summary>
-        /// <returns>
-        /// True if the specified <see cref="T:System.Object" /> is equal to the current <see cref="T:System.Object" />; otherwise, false.
-        /// </returns>
-        /// <param name="obj"> The <see cref="T:System.Object" /> to compare with the current <see cref="T:System.Object" />.</param>
-        /// <exception cref="T:System.NullReferenceException">
-        /// The <paramref name="obj" /> parameter is null.
-        /// </exception>
-        public override bool Equals(object obj)
+        /// <returns>A new ApplicationRegistry that is a copy of this instance.</returns>
+        public override object Clone()
         {
-            if (obj is ApplicationRegistry)
-                return this.Equals((ApplicationRegistry) obj);
-            return false;
-        }
-
-        ///<summary>
-        /// Serves as a hash function for a particular type. 
-        ///</summary>
-        ///<returns>
-        /// A hash code for the current <see cref="T:System.Object" />.
-        ///</returns>
-        public override int GetHashCode()
-        {
-            return this.Name.GetHashCode();
+            return this.Clone(this.Name);
         }
 
         #endregion

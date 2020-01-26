@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2013 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -24,17 +24,16 @@ using System;
 
 namespace netDxf.Entities
 {
-
     /// <summary>
     /// Represents a <see cref="Polyline">polyline</see> vertex.
     /// </summary>
     public class PolylineVertex :
         DxfObject, ICloneable
-    { 
+    {
         #region private fields
 
-        private readonly VertexTypeFlags flags;
-        private Vector3 location;
+        private VertexTypeFlags flags;
+        private Vector3 position;
 
         #endregion
 
@@ -62,25 +61,25 @@ namespace netDxf.Entities
         /// <summary>
         /// Initializes a new instance of the <c>PolylineVertex</c> class.
         /// </summary>
-        /// <param name="location">Polyline <see cref="Vector3">vertex</see> coordinates.</param>
-        public PolylineVertex(Vector3 location)
+        /// <param name="position">Polyline <see cref="Vector3">vertex</see> coordinates.</param>
+        public PolylineVertex(Vector3 position)
             : base(DxfObjectCode.Vertex)
         {
             this.flags = VertexTypeFlags.Polyline3dVertex;
-            this.location = location;
+            this.position = position;
         }
 
         #endregion
 
         #region public properties
 
-       /// <summary>
-        /// Gets or sets the vertex <see cref="Vector3">location</see>.
+        /// <summary>
+        /// Gets or sets the vertex <see cref="Vector3">position</see>.
         /// </summary>
-        public Vector3 Location
+        public Vector3 Position
         {
-            get { return this.location; }
-            set { this.location = value; }
+            get { return this.position; }
+            set { this.position = value; }
         }
 
         /// <summary>
@@ -89,19 +88,20 @@ namespace netDxf.Entities
         internal VertexTypeFlags Flags
         {
             get { return this.flags; }
+            set { this.flags = value; }
         }
 
         #endregion
 
         #region overrides
-        
+
         /// <summary>
         /// Converts the value of this instance to its equivalent string representation.
         /// </summary>
         /// <returns>The string representation.</returns>
         public override string ToString()
         {
-            return String.Format("{0}: ({1})", "PolylineVertex", this.location);
+            return string.Format("{0}: ({1})", "PolylineVertex", this.position);
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace netDxf.Entities
         /// <returns>A new PolylineVertex that is a copy of this instance.</returns>
         public object Clone()
         {
-            return new PolylineVertex(this.location);
+            return new PolylineVertex(this.position);
         }
 
         #endregion

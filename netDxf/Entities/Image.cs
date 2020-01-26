@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,39 +16,42 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 using System;
+using System.Collections.Generic;
 using netDxf.Objects;
+using netDxf.Tables;
 
 namespace netDxf.Entities
 {
-
     /// <summary>
     /// Represents a raster image <see cref="EntityObject">entity</see>.
     /// </summary>
     public class Image :
-        EntityObject 
+        EntityObject
     {
         #region private fields
 
         private Vector3 position;
+        private Vector2 uvector;
+        private Vector2 vvector;
         private double width;
         private double height;
-        private double rotation;
-        private ImageDef imageDef;
+        //private double rotation;
+        private ImageDefinition imageDefinition;
         private bool clipping;
         private short brightness;
         private short contrast;
         private short fade;
         private ImageDisplayFlags displayOptions;
-        private ImageClippingBoundary clippingBoundary;
+        private ClippingBoundary clippingBoundary;
 
         #endregion
 
-        #region contructors
+        #region constructors
 
         internal Image()
             : base(EntityType.Image, DxfObjectCode.Image)
@@ -61,7 +64,7 @@ namespace netDxf.Entities
         /// <param name="imageDefinition">Image definition.</param>
         /// <param name="position">Image <see cref="Vector2">position</see> in world coordinates.</param>
         /// <param name="size">Image <see cref="Vector2">size</see> in world coordinates.</param>
-        public Image(ImageDef imageDefinition, Vector2 position, Vector2 size)
+        public Image(ImageDefinition imageDefinition, Vector2 position, Vector2 size)
             : this(imageDefinition, new Vector3(position.X, position.Y, 0.0), size.X, size.Y)
         {
         }
@@ -72,8 +75,8 @@ namespace netDxf.Entities
         /// <param name="imageDefinition">Image definition.</param>
         /// <param name="position">Image <see cref="Vector3">position</see> in world coordinates.</param>
         /// <param name="size">Image <see cref="Vector2">size</see> in world coordinates.</param>
-        public Image(ImageDef imageDefinition, Vector3 position, Vector2 size)
-            :this(imageDefinition, position, size.X, size.Y)
+        public Image(ImageDefinition imageDefinition, Vector3 position, Vector2 size)
+            : this(imageDefinition, position, size.X, size.Y)
         {
         }
 
@@ -84,7 +87,7 @@ namespace netDxf.Entities
         /// <param name="position">Image <see cref="Vector2">position</see> in world coordinates.</param>
         /// <param name="width">Image width in world coordinates.</param>
         /// <param name="height">Image height in world coordinates.</param>
-        public Image(ImageDef imageDefinition, Vector2 position, double width, double height)
+        public Image(ImageDefinition imageDefinition, Vector2 position, double width, double height)
             : this(imageDefinition, new Vector3(position.X, position.Y, 0.0), width, height)
         {
         }
@@ -96,20 +99,29 @@ namespace netDxf.Entities
         /// <param name="position">Image <see cref="Vector3">position</see> in world coordinates.</param>
         /// <param name="width">Image width in world coordinates.</param>
         /// <param name="height">Image height in world coordinates.</param>
-        public Image(ImageDef imageDefinition, Vector3 position, double width, double height)
+        public Image(ImageDefinition imageDefinition, Vector3 position, double width, double height)
             : base(EntityType.Image, DxfObjectCode.Image)
         {
-            this.imageDef = imageDefinition;
+            if (imageDefinition == null)
+                throw new ArgumentNullException(nameof(imageDefinition));
+
+            this.imageDefinition = imageDefinition;
             this.position = position;
+            this.uvector = Vector2.UnitX;
+            this.vvector = Vector2.UnitY;
+            if (width <= 0)
+                throw new ArgumentOutOfRangeException(nameof(width), width, "The Image width must be greater than zero.");
             this.width = width;
+            if (height <= 0)
+                throw new ArgumentOutOfRangeException(nameof(height), height, "The Image height must be greater than zero.");
             this.height = height;
-            this.rotation = 0;
+            //this.rotation = 0;
             this.clipping = false;
             this.brightness = 50;
             this.contrast = 50;
             this.fade = 0;
             this.displayOptions = ImageDisplayFlags.ShowImage | ImageDisplayFlags.ShowImageWhenNotAlignedWithScreen | ImageDisplayFlags.UseClippingBoundary;
-            this.clippingBoundary = new ImageClippingBoundary(-0.5, -0.5, imageDefinition.Width, imageDefinition.Height);
+            this.clippingBoundary = new ClippingBoundary(0, 0, imageDefinition.Width, imageDefinition.Height);
         }
 
         #endregion
@@ -126,12 +138,47 @@ namespace netDxf.Entities
         }
 
         /// <summary>
+        /// Gets or sets the image <see cref="Vector2">U-vector</see>.
+        /// </summary>
+        public Vector2 Uvector
+        {
+            get { return this.uvector; }
+            set
+            {
+                if(Vector2.Equals(Vector2.Zero, value))
+                    throw new ArgumentException("The U vector can not be the zero vector.", nameof(value));
+
+                this.uvector = Vector2.Normalize(value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the image <see cref="Vector2">V-vector</see>.
+        /// </summary>
+        public Vector2 Vvector
+        {
+            get { return this.vvector; }
+            set
+            {
+                if(Vector2.Equals(Vector2.Zero, value))
+                    throw new ArgumentException("The V vector can not be the zero vector.", nameof(value));
+
+                this.vvector = Vector2.Normalize(value);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the height of the image in drawing units.
         /// </summary>
         public double Height
         {
             get { return this.height; }
-            set { this.height = value; }
+            set
+            {
+                if (value <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The Image height must be greater than zero.");
+                this.height = value;
+            }
         }
 
         /// <summary>
@@ -140,25 +187,44 @@ namespace netDxf.Entities
         public double Width
         {
             get { return this.width; }
-            set { this.width = value; }
+            set
+            {
+                if (value <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The Image width must be greater than zero.");
+                this.width = value;
+            }
         }
 
         /// <summary>
         /// Gets or sets the image rotation in degrees.
         /// </summary>
+        /// <remarks>The image rotation is the angle of the U-vector.</remarks>
         public double Rotation
         {
-            get { return this.rotation; }
-            set { this.rotation = MathHelper.NormalizeAngle(value); }
+            get
+            {
+                return Vector2.Angle(this.uvector) * MathHelper.RadToDeg;
+                //return this.rotation;
+            }
+            set
+            {
+                //this.rotation = MathHelper.NormalizeAngle(value);
+
+                List<Vector2> uv = MathHelper.Transform(new List<Vector2> { this.uvector, this.vvector },
+                    MathHelper.NormalizeAngle(value) * MathHelper.DegToRad,
+                    CoordinateSystem.Object, CoordinateSystem.World);
+                this.uvector = uv[0];
+                this.vvector = uv[1];
+            }
         }
 
         /// <summary>
-        /// Gets the <see cref="ImageDef">image definition</see>.
+        /// Gets the <see cref="ImageDefinition">image definition</see>.
         /// </summary>
-        public ImageDef Definition
+        public ImageDefinition Definition
         {
-            get { return this.imageDef; }
-            internal set { this.imageDef = value; }
+            get { return this.imageDefinition; }
+            internal set { this.imageDefinition = value; }
         }
 
         /// <summary>
@@ -179,7 +245,7 @@ namespace netDxf.Entities
             set
             {
                 if (value < 0 && value > 100)
-                    throw new ArgumentOutOfRangeException("value", value, "Accepted brightness values range from 0 to 100.");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted brightness values range from 0 to 100.");
                 this.brightness = value;
             }
         }
@@ -193,7 +259,7 @@ namespace netDxf.Entities
             set
             {
                 if (value < 0 && value > 100)
-                    throw new ArgumentOutOfRangeException("value", value, "Accepted contrast values range from 0 to 100.");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted contrast values range from 0 to 100.");
                 this.contrast = value;
             }
         }
@@ -207,7 +273,7 @@ namespace netDxf.Entities
             set
             {
                 if (value < 0 && value > 100)
-                    throw new ArgumentOutOfRangeException("value", value, "Accepted fade values range from 0 to 100.");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted fade values range from 0 to 100.");
                 this.fade = value;
             }
         }
@@ -225,12 +291,13 @@ namespace netDxf.Entities
         /// Gets or sets the image clipping boundary.
         /// </summary>
         /// <remarks>
-        /// Set as null to restore the default clipping boundary.
+        /// The vertexes coordinates of the clipping boundary are expressed in local coordinates of the image in pixels.
+        /// Set as null to restore the default clipping boundary, full image.
         /// </remarks>
-        public ImageClippingBoundary ClippingBoundary
+        public ClippingBoundary ClippingBoundary
         {
             get { return this.clippingBoundary; }
-            set { this.clippingBoundary = value ?? new ImageClippingBoundary(-0.5, -0.5, this.imageDef.Width, this.imageDef.Height); }
+            set { this.clippingBoundary = value ?? new ClippingBoundary(0, 0, this.Definition.Width, this.Definition.Height); }
         }
 
         #endregion
@@ -238,37 +305,102 @@ namespace netDxf.Entities
         #region overrides
 
         /// <summary>
+        /// Moves, scales, and/or rotates the current entity given a 3x3 transformation matrix and a translation vector.
+        /// </summary>
+        /// <param name="transformation">Transformation matrix.</param>
+        /// <param name="translation">Translation vector.</param>
+        /// <remarks>Matrix3 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
+        public override void TransformBy(Matrix3 transformation, Vector3 translation)
+        {
+            Vector3 newPosition = transformation * this.Position + translation;
+            Vector3 newNormal = transformation * this.Normal;
+            if (Vector3.Equals(Vector3.Zero, newNormal)) newNormal = this.Normal;
+
+            Matrix3 transOW = MathHelper.ArbitraryAxis(this.Normal);
+
+            Matrix3 transWO = MathHelper.ArbitraryAxis(newNormal);
+            transWO = transWO.Transpose();
+
+            Vector3 v;
+            v = transOW * new Vector3(this.Uvector.X * this.Width, this.Uvector.Y * this.Width, 0.0);
+            v = transformation * v;
+            v = transWO * v;
+            Vector2 newUvector = new Vector2(v.X, v.Y);
+            
+            double newWidth;
+            if (Vector2.Equals(Vector2.Zero, newUvector))
+            {
+                newUvector = this.Uvector;
+                newWidth = MathHelper.Epsilon;
+            }
+            else
+            {
+                newWidth = newUvector.Modulus();
+            }
+
+            v = transOW * new Vector3(this.Vvector.X * this.Height, this.Vvector.Y * this.Height, 0.0);
+            v = transformation * v;
+            v = transWO * v;
+            Vector2 newVvector = new Vector2(v.X, v.Y);
+
+            double newHeight;
+            if (Vector2.Equals(Vector2.Zero, newVvector))
+            {
+                newVvector = this.Uvector;
+                newHeight = MathHelper.Epsilon;
+            }
+            else
+            {
+                newHeight = newVvector.Modulus();
+            }
+
+            this.Position = newPosition;
+            this.Normal = newNormal;
+            this.Uvector = newUvector;
+            this.Vvector = newVvector;
+            this.Width = newWidth;
+            this.Height = newHeight;
+        }
+
+        /// <summary>
         /// Creates a new Image that is a copy of the current instance.
         /// </summary>
         /// <returns>A new Image that is a copy of this instance.</returns>
         public override object Clone()
         {
-            return new Image
+            Image entity = new Image
             {
                 //EntityObject properties
-                Color = this.color,
-                Layer = this.layer,
-                LineType = this.lineType,
-                Lineweight = this.lineweight,
-                LineTypeScale = this.lineTypeScale,
-                Normal = this.normal,
-                XData = this.xData,
+                Layer = (Layer) this.Layer.Clone(),
+                Linetype = (Linetype) this.Linetype.Clone(),
+                Color = (AciColor) this.Color.Clone(),
+                Lineweight = this.Lineweight,
+                Transparency = (Transparency) this.Transparency.Clone(),
+                LinetypeScale = this.LinetypeScale,
+                Normal = this.Normal,
+                IsVisible = this.IsVisible,
                 //Image properties
                 Position = this.position,
                 Height = this.height,
                 Width = this.width,
-                Rotation = this.rotation,
-                Definition = this.imageDef,
+                Uvector = this.uvector,
+                Vvector = this.vvector,
+                //Rotation = this.rotation,
+                Definition = (ImageDefinition) this.imageDefinition.Clone(),
                 Clipping = this.clipping,
                 Brightness = this.brightness,
                 Contrast = this.contrast,
                 Fade = this.fade,
                 DisplayOptions = this.displayOptions,
-                ClippingBoundary = (ImageClippingBoundary) this.clippingBoundary.Clone()
+                ClippingBoundary = (ClippingBoundary) this.clippingBoundary.Clone()
             };
+
+            foreach (XData data in this.XData.Values)
+                entity.XData.Add((XData) data.Clone());
+
+            return entity;
         }
 
         #endregion
-
     }
 }

@@ -1,7 +1,7 @@
-#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using netDxf.Blocks;
 using netDxf.Entities;
 using netDxf.Objects;
+using netDxf.Tables;
 
 namespace netDxf.Collections
 {
@@ -32,7 +33,7 @@ namespace netDxf.Collections
     /// Represents a collection of layouts.
     /// </summary>
     /// <remarks>
-    /// AutoCad limits the number of layouts to 256, but at the same time it allows to import dxf files with more than that,
+    /// AutoCad limits the number of layouts to 256, but at the same time it allows to import DXF files with more than that,
     /// for this reason the max capacity has been set to short.MaxValue.
     /// The maximum number of layouts is also limited by the number of blocks, due to that for each layout a block record must exist in the blocks collection.
     /// </remarks>
@@ -41,19 +42,16 @@ namespace netDxf.Collections
     {
         #region constructor
 
-        internal Layouts(DxfDocument document, string handle = null)
-            : this(document, 0, handle)
+        internal Layouts(DxfDocument document)
+            : this(document, null)
         {
         }
 
-        internal Layouts(DxfDocument document, int capacity, string handle = null)
-            : base(document,
-                new Dictionary<string, Layout>(capacity, StringComparer.OrdinalIgnoreCase),
-                new Dictionary<string, List<DxfObject>>(capacity, StringComparer.OrdinalIgnoreCase),
-                StringCode.LayoutDictionary,
-                handle)
+        internal Layouts(DxfDocument document, string handle)
+            : base(document, DxfObjectCode.LayoutDictionary, handle)
         {
-            this.maxCapacity = short.MaxValue;
+            this.MaxCapacity = short.MaxValue;
+            this.references = null;
         }
 
         #endregion
@@ -61,46 +59,105 @@ namespace netDxf.Collections
         #region override methods
 
         /// <summary>
+        /// Gets the <see cref="DxfObject">dxf objects</see> referenced by a T.
+        /// </summary>
+        /// <param name="name">Table object name.</param>
+        /// <returns>The list of DxfObjects that reference the specified table object.</returns>
+        /// <remarks>
+        /// If there is no table object with the specified name in the list the method an empty list.<br />
+        /// The Groups collection method GetReferences will always return an empty list since there are no DxfObjects that references them.
+        /// </remarks>
+        public new List<DxfObject> GetReferences(string name)
+        {
+            if (!this.Contains(name))
+                return new List<DxfObject>();
+            return this.GetReferences(this[name]);
+        }
+
+        /// <summary>
+        /// Gets the <see cref="DxfObject">dxf objects</see> referenced by a T.
+        /// </summary>
+        /// <param name="item">Table object.</param>
+        /// <returns>The list of DxfObjects that reference the specified table object.</returns>
+        /// <remarks>
+        /// If there is no table object with the specified name in the list the method an empty list.<br />
+        /// The Groups collection method GetReferences will always return an empty list since there are no DxfObjects that references them.
+        /// </remarks>
+        public new List<DxfObject> GetReferences(Layout item)
+        {
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
+            List<DxfObject> refs = new List<DxfObject>();
+            refs.AddRange(item.AssociatedBlock.Entities);
+            refs.AddRange(item.AssociatedBlock.AttributeDefinitions.Values);
+            return refs;
+        }
+
+        /// <summary>
         /// Adds a layout to the list.
         /// </summary>
         /// <param name="layout"><see cref="Layout">Layout</see> to add to the list.</param>
+        /// <param name="assignHandle">Specifies if a handle needs to be generated for the layout parameter.</param>
         /// <returns>
         /// If a layout already exists with the same name as the instance that is being added the method returns the existing layout.
         /// </returns>
         internal override Layout Add(Layout layout, bool assignHandle)
         {
-            if (this.list.Count >= this.maxCapacity)
-                throw new OverflowException(String.Format("Table overflow. The maximum number of elements the table {0} can have is {1}", this.codeName, this.maxCapacity));
-
-            Layout add;
-            if (this.list.TryGetValue(layout.Name, out add))
-                return add;
-
-            Block associatadBlock = layout.AssociatedBlock;
-
-            // create and add the corresponding PaperSpace block
-            if (layout.IsPaperSpace && associatadBlock == null)
+            if (this.list.Count >= this.MaxCapacity)
             {
-                int index = this.list.Count - 2;
-                string spaceName = index < 0 ? Block.PaperSpace.Name : string.Concat(Block.PaperSpace.Name, index);
-                associatadBlock = new Block(spaceName, false);
+                throw new OverflowException(string.Format("Table overflow. The maximum number of elements the table {0} can have is {1}", this.CodeName, this.MaxCapacity));
             }
 
-            associatadBlock = this.document.Blocks.Add(associatadBlock);
-            layout.AssociatedBlock = associatadBlock;
-            associatadBlock.Record.Layout = layout;
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            Layout add;
+
+            if (this.list.TryGetValue(layout.Name, out add))
+            {
+                return add;
+            }
+
             layout.Owner = this;
 
-            if (layout.Viewport != null) layout.Viewport.Owner = associatadBlock;
+            Block associatedBlock = layout.AssociatedBlock;
 
-            if (assignHandle)
-                this.document.NumHandles = layout.AsignHandle(this.document.NumHandles);
+            // create and add the corresponding PaperSpace block
+            if (layout.IsPaperSpace && associatedBlock == null)
+            {
+                // the PaperSpace block names follow the naming Paper_Space, Paper_Space0, Paper_Space1, ...
+                string spaceName = this.list.Count == 1 ? Block.DefaultPaperSpaceName : string.Concat(Block.DefaultPaperSpaceName, this.list.Count - 2);
+                associatedBlock = new Block(spaceName, null, null, false);
+                if (layout.TabOrder == 0)
+                {
+                    layout.TabOrder = (short) this.list.Count;
+                }
+            }
 
-            this.document.AddedObjects.Add(layout.Handle, layout);
+            associatedBlock = this.Owner.Blocks.Add(associatedBlock);
+
+            layout.AssociatedBlock = associatedBlock;
+            associatedBlock.Record.Layout = layout;
+            this.Owner.Blocks.References[associatedBlock.Name].Add(layout);
+
+            if (layout.Viewport != null)
+            {
+                layout.Viewport.Owner = associatedBlock;
+            }
+
+            if (assignHandle || string.IsNullOrEmpty(layout.Handle))
+            {
+                this.Owner.NumHandles = layout.AssignHandle(this.Owner.NumHandles);
+            }
 
             this.list.Add(layout.Name, layout);
 
-            this.references.Add(layout.Name, new List<DxfObject>());
+            layout.NameChanged += this.Item_NameChanged;
+
+            this.Owner.AddedObjects.Add(layout.Handle, layout);
+
             return layout;
         }
 
@@ -108,9 +165,9 @@ namespace netDxf.Collections
         /// Deletes a layout and removes the layout entities from the document.
         /// </summary>
         /// <param name="name"><see cref="Layout">Layout</see> name to remove from the document.</param>
-        /// <returns>True is the layout has been successfully removed, or false otherwise.</returns>
+        /// <returns>True if the layout has been successfully removed, or false otherwise.</returns>
         /// <remarks>
-        /// The ModelSpace layout cannot be remove. If all PaperSpace layouts have been removed a default PaperSpace will be created since it is required by the dxf implementation.<br />
+        /// The ModelSpace layout cannot be removed. If all PaperSpace layouts have been removed a default PaperSpace will be created since it is required by the DXF implementation.<br />
         /// When a Layout is deleted all entities that has been added to it will also be removed.<br />
         /// Removing a Layout will rebuild the PaperSpace block names, to follow the naming rule: Paper_Space, Paper_Space0, Paper_Space1, ...
         /// </remarks>
@@ -122,64 +179,77 @@ namespace netDxf.Collections
         /// <summary>
         /// Deletes a layout and removes the layout entities from the document.
         /// </summary>
-        /// <param name="layout"><see cref="Layout">Layout</see> to remove from the document.</param>
-        /// <returns>True is the layout has been successfully removed, or false otherwise.</returns>
+        /// <param name="item"><see cref="Layout">Layout</see> to remove from the document.</param>
+        /// <returns>True if the layout has been successfully removed, or false otherwise.</returns>
         /// <remarks>Reserved layouts or any other referenced by objects cannot be removed.</remarks>
-        public override bool Remove(Layout layout)
+        public override bool Remove(Layout item)
         {
-            if (layout == null)
-                return false;
+            if (item == null) return false;
 
-            if (!this.Contains(layout))
-                return false;
+            if (!this.Contains(item)) return false;
 
-            if (layout.IsReserved)
-                return false;
+            if (item.IsReserved) return false;
 
-            List<DxfObject> refObjects = this.references[layout.Name];
+            // remove the entities of the layout
+            List<DxfObject> refObjects = this.GetReferences(item.Name);
             if (refObjects.Count != 0)
             {
                 DxfObject[] entities = new DxfObject[refObjects.Count];
                 refObjects.CopyTo(entities);
                 foreach (DxfObject e in entities)
                 {
-                    this.document.RemoveEntity(e as EntityObject);
+                    this.Owner.RemoveEntity(e as EntityObject);
                 }
             }
 
-            // When a layout is removed we need to rebuild the PaperSpace block names, to follow the naming Paper_Space, Paper_Space0, Paper_Space1, ...
-            foreach (Layout l in this.list.Values)
-            {
-                // The ModelSpace block cannot be removed. 
-                if (l.IsPaperSpace)
-                {
-                    this.document.Blocks.Remove(l.AssociatedBlock);
-                    l.AssociatedBlock = null;
-                }
-            }
+            // remove the associated block of the Layout that is being removed
+            this.Owner.Blocks.References[item.AssociatedBlock.Name].Remove(item);
+            this.Owner.Blocks.Remove(item.AssociatedBlock);
+            item.AssociatedBlock = null;
 
-            layout.Owner = null;
-            layout.Viewport.Owner = null;
-            this.document.AddedObjects.Remove(layout.Handle);
-            this.references.Remove(layout.Name);
-            this.list.Remove(layout.Name);
+            // remove the layout
+            this.Owner.AddedObjects.Remove(item.Handle);
+            this.list.Remove(item.Name);
 
-            // When a layout is removed we need to rebuild the PaperSpace block names, to follow the naming Paper_Space, Paper_Space0, Paper_Space1, ...
-            foreach (Layout l in this.list.Values)
-            {
-                // Create and add the corresponding PaperSpace block
-                if (l.IsPaperSpace)
-                {
-                    int index = this.list.Count - 3;
-                    string spaceName = index < 0 ? Block.PaperSpace.Name : string.Concat(Block.PaperSpace.Name, index);
-                    Block associatadBlock = new Block(spaceName, false);
-                    associatadBlock = this.document.Blocks.Add(associatadBlock);
-                    l.AssociatedBlock = associatadBlock;
-                    associatadBlock.Record.Layout = l;
-                }
-            }
+            item.Handle = null;
+            item.Owner = null;
+
+            item.NameChanged -= this.Item_NameChanged;
+
+            this.RenameAssociatedBlocks();
 
             return true;
+        }
+
+        internal void RenameAssociatedBlocks()
+        {
+            // When a layout is removed we need to rebuild the PaperSpace block names, to follow the naming Paper_Space, Paper_Space0, Paper_Space1, ...
+            int index = 0;
+            foreach (Layout l in this.list.Values)
+            {
+                // rename the corresponding PaperSpace block
+                if (l.IsPaperSpace)
+                {
+                    string spaceName = index == 0 ? Block.PaperSpace.Name : string.Concat(Block.PaperSpace.Name, index - 1);
+                    l.AssociatedBlock.SetName(spaceName, false);                  
+                    index += 1;
+                }
+            }
+        }
+
+        #endregion
+
+        #region Linetype events
+
+        private void Item_NameChanged(TableObject sender, TableObjectChangedEventArgs<string> e)
+        {
+            if (this.Contains(e.NewValue))
+            {
+                throw new ArgumentException("There is already another layout with the same name.");
+            }
+
+            this.list.Remove(sender.Name);
+            this.list.Add(e.NewValue, (Layout) sender);
         }
 
         #endregion

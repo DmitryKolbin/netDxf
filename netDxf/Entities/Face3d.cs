@@ -1,7 +1,7 @@
-#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,9 +16,11 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
+
+using netDxf.Tables;
 
 namespace netDxf.Entities
 {
@@ -56,9 +58,9 @@ namespace netDxf.Entities
         /// <param name="thirdVertex">3d face <see cref="Vector2">third vertex</see>.</param>
         public Face3d(Vector2 firstVertex, Vector2 secondVertex, Vector2 thirdVertex)
             : this(new Vector3(firstVertex.X, firstVertex.Y, 0.0),
-                   new Vector3(secondVertex.X, secondVertex.Y, 0.0),
-                   new Vector3(thirdVertex.X, thirdVertex.Y, 0.0),
-                   new Vector3(thirdVertex.X, thirdVertex.Y, 0.0))
+                new Vector3(secondVertex.X, secondVertex.Y, 0.0),
+                new Vector3(thirdVertex.X, thirdVertex.Y, 0.0),
+                new Vector3(thirdVertex.X, thirdVertex.Y, 0.0))
         {
         }
 
@@ -71,9 +73,9 @@ namespace netDxf.Entities
         /// <param name="fourthVertex">3d face <see cref="Vector2">fourth vertex</see>.</param>
         public Face3d(Vector2 firstVertex, Vector2 secondVertex, Vector2 thirdVertex, Vector2 fourthVertex)
             : this(new Vector3(firstVertex.X, firstVertex.Y, 0.0),
-                   new Vector3(secondVertex.X, secondVertex.Y, 0.0),
-                   new Vector3(thirdVertex.X, thirdVertex.Y, 0.0),
-                   new Vector3(fourthVertex.X, fourthVertex.Y, 0.0))
+                new Vector3(secondVertex.X, secondVertex.Y, 0.0),
+                new Vector3(thirdVertex.X, thirdVertex.Y, 0.0),
+                new Vector3(fourthVertex.X, fourthVertex.Y, 0.0))
         {
         }
 
@@ -159,21 +161,40 @@ namespace netDxf.Entities
         #region overrides
 
         /// <summary>
+        /// Moves, scales, and/or rotates the current entity given a 3x3 transformation matrix and a translation vector.
+        /// </summary>
+        /// <param name="transformation">Transformation matrix.</param>
+        /// <param name="translation">Translation vector.</param>
+        /// <remarks>Matrix3 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
+        public override void TransformBy(Matrix3 transformation, Vector3 translation)
+        {
+            this.FirstVertex = transformation * this.FirstVertex + translation;
+            this.SecondVertex = transformation * this.SecondVertex + translation;
+            this.ThirdVertex = transformation * this.ThirdVertex + translation;
+            this.FourthVertex = transformation * this.FourthVertex + translation;
+
+            Vector3 newNormal = transformation * this.Normal;
+            if (Vector3.Equals(Vector3.Zero, newNormal)) newNormal = this.Normal;
+            this.Normal = newNormal;
+        }
+
+        /// <summary>
         /// Creates a new Face3d that is a copy of the current instance.
         /// </summary>
         /// <returns>A new Face3d that is a copy of this instance.</returns>
         public override object Clone()
         {
-            return new Face3d
+            Face3d entity = new Face3d
             {
                 //EntityObject properties
-                Color = this.color,
-                Layer = this.layer,
-                LineType = this.lineType,
-                Lineweight = this.lineweight,
-                LineTypeScale = this.lineTypeScale,
-                Normal = this.normal,
-                XData = this.xData,
+                Layer = (Layer) this.Layer.Clone(),
+                Linetype = (Linetype) this.Linetype.Clone(),
+                Color = (AciColor) this.Color.Clone(),
+                Lineweight = this.Lineweight,
+                Transparency = (Transparency) this.Transparency.Clone(),
+                LinetypeScale = this.LinetypeScale,
+                Normal = this.Normal,
+                IsVisible = this.IsVisible,
                 //Face3d properties
                 FirstVertex = this.firstVertex,
                 SecondVertex = this.secondVertex,
@@ -181,9 +202,13 @@ namespace netDxf.Entities
                 FourthVertex = this.fourthVertex,
                 EdgeFlags = this.edgeFlags
             };
+
+            foreach (XData data in this.XData.Values)
+                entity.XData.Add((XData) data.Clone());
+
+            return entity;
         }
 
         #endregion
-
     }
 }

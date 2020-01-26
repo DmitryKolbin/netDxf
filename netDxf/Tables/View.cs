@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,59 +16,29 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
+using System;
 using netDxf.Collections;
 
 namespace netDxf.Tables
 {
-
-    public enum Viewmode
-    {
-        /// <summary>
-        /// Turned off.
-        /// </summary>
-        Off = 0,
-        /// <summary>
-        /// Perspective view active.
-        /// </summary>
-        Perspective = 1,
-        /// <summary>
-        /// Front clipping on.
-        /// </summary>
-        FrontClippingPlane = 2,
-        /// <summary>
-        /// Back clipping on.
-        /// </summary>
-        BackClippingPlane = 4,
-        /// <summary>
-        /// UCS Follow mode on.
-        /// </summary>
-        UCSFollow = 8,
-        /// <summary>
-        /// Front clip not at eye. If on, the front clip distance (FRONTZ) determines the front clipping plane.
-        /// If off, FRONTZ is ignored, and the front clipping plane is set to pass through the camera point (vectors behind the camera are not displayed).
-        /// This flag is ignored if the front-clipping bit (2) is off.
-        /// </summary>
-        FrontClipNotAtEye = 16
-    }
-
     public class View :
         TableObject
     {
         #region private fields
 
-        private Vector3 target = Vector3.Zero;
-        private Vector3 camera = Vector3.UnitZ;
-        private double height = 1.0;
-        private double width = 1.0;
-        private double rotation = 0.0;
-        private Viewmode viewmode = Viewmode.Off;
-        private double fov = 40.0;
-        private double frontClippingPlane = 0.0;
-        private double backClippingPlane = 0.0;
+        private Vector3 target;
+        private Vector3 camera;
+        private double height;
+        private double width;
+        private double rotation;
+        private ViewModeFlags viewmode;
+        private double fov;
+        private double frontClippingPlane;
+        private double backClippingPlane;
 
         #endregion
 
@@ -82,9 +52,26 @@ namespace netDxf.Tables
         /// Initializes a new instance of the <c>View</c> class.
         /// </summary>
         public View(string name)
-            : base(name, DxfObjectCode.View, true)
+            : this(name, true)
         {
-            this.reserved = false;
+        }
+
+        internal View(string name, bool checkName)
+            : base(name, DxfObjectCode.View, checkName)
+        {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentNullException(nameof(name), "The view name should be at least one character long.");
+
+            this.IsReserved = false;
+            this.target = Vector3.Zero;
+            this.camera = Vector3.UnitZ;
+            this.height = 1.0;
+            this.width = 1.0;
+            this.rotation = 0.0;
+            this.viewmode = ViewModeFlags.Off;
+            this.fov = 40.0;
+            this.frontClippingPlane = 0.0;
+            this.backClippingPlane = 0.0;
         }
 
         #endregion
@@ -121,7 +108,7 @@ namespace netDxf.Tables
             set { this.rotation = value; }
         }
 
-        public Viewmode Viewmode
+        public ViewModeFlags Viewmode
         {
             get { return this.viewmode; }
             set { this.viewmode = value; }
@@ -146,15 +133,53 @@ namespace netDxf.Tables
         }
 
         /// <summary>
-        /// Gets the owner of the actual dxf object.
+        /// Gets the owner of the actual view.
         /// </summary>
         public new Views Owner
         {
-            get { return (Views)this.owner; }
-            internal set { this.owner = value; }
+            get { return (Views) base.Owner; }
+            internal set { base.Owner = value; }
         }
 
         #endregion
 
+        #region overrides
+
+        /// <summary>
+        /// Creates a new View that is a copy of the current instance.
+        /// </summary>
+        /// <param name="newName">View name of the copy.</param>
+        /// <returns>A new View that is a copy of this instance.</returns>
+        public override TableObject Clone(string newName)
+        {
+            View copy = new View(newName)
+            {
+                Target = this.target,
+                Camera = this.camera,
+                Height = this.height,
+                Width = this.width,
+                Rotation = this.rotation,
+                Viewmode = this.viewmode,
+                Fov = this.fov,
+                FrontClippingPlane = this.frontClippingPlane,
+                BackClippingPlane = this.backClippingPlane
+            };
+
+            foreach (XData data in this.XData.Values)
+                copy.XData.Add((XData)data.Clone());
+
+            return copy;
+        }
+
+        /// <summary>
+        /// Creates a new View that is a copy of the current instance.
+        /// </summary>
+        /// <returns>A new View that is a copy of this instance.</returns>
+        public override object Clone()
+        {
+            return this.Clone(this.Name);
+        }
+
+        #endregion
     }
 }

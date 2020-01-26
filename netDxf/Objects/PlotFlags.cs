@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -35,57 +35,70 @@ namespace netDxf.Objects
         /// Plot viewport borders.
         /// </summary>
         PlotViewportBorders = 1,
+
         /// <summary>
         /// Show plot styles.
         /// </summary>
-        ShowPlotStyles=2,
+        ShowPlotStyles = 2,
+
         /// <summary>
         /// Plot centered.
         /// </summary>
-        PlotCentered=4,
+        PlotCentered = 4,
+
         /// <summary>
         /// Plot hidden.
         /// </summary>
-        PlotHidden=8,
+        PlotHidden = 8,
+
         /// <summary>
         /// Use standard scale.
         /// </summary>
-        UseStandardScale=16,
+        UseStandardScale = 16,
+
         /// <summary>
-        /// Plot plot styles.
+        /// Plot styles.
         /// </summary>
-        PlotPlotStyles=32,
+        PlotPlotStyles = 32,
+
         /// <summary>
         /// Scale line weights.
         /// </summary>
-        ScaleLineweights=64,
+        ScaleLineweights = 64,
+
         /// <summary>
         /// Print line weights.
         /// </summary>
-        PrintLineweights=128,
+        PrintLineweights = 128,
+
         /// <summary>
         /// Draw viewports first.
         /// </summary>
-        DrawViewportsFirst=512,
+        DrawViewportsFirst = 512,
+
         /// <summary>
         /// Model type.
         /// </summary>
-        ModelType=1024,
+        ModelType = 1024,
+
         /// <summary>
         /// Update paper.
         /// </summary>
-        UpdatePaper=2048,
+        UpdatePaper = 2048,
+
         /// <summary>
-        /// Soom to paper on update.
+        /// Soon to paper on update.
         /// </summary>
-        ZoomToPaperOnUpdate=4096,
+        ZoomToPaperOnUpdate = 4096,
+
         /// <summary>
         /// Initializing.
         /// </summary>
-        Initializing=8192,
+        Initializing = 8192,
+
         /// <summary>
-        /// Prev plot init.
+        /// Preview plot initialization.
         /// </summary>
-        PrevPlotInit=16384
+        PrevPlotInit = 16384
     }
 }

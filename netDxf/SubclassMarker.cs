@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2013 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -33,7 +33,7 @@ namespace netDxf
         public const string Layer = "AcDbLayerTableRecord";
         public const string VPort = "AcDbViewportTableRecord";
         public const string View = "AcDbViewTableRecord";
-        public const string LineType = "AcDbLinetypeTableRecord";
+        public const string Linetype = "AcDbLinetypeTableRecord";
         public const string TextStyle = "AcDbTextStyleTableRecord";
         public const string MLineStyle = "AcDbMlineStyle";
         public const string DimensionStyleTable = "AcDbDimStyleTable";
@@ -65,6 +65,7 @@ namespace netDxf
         public const string Point = "AcDbPoint";
         public const string Vertex = "AcDbVertex";
         public const string Polyline = "AcDb2dPolyline";
+        public const string Leader = "AcDbLeader";
         public const string LightWeightPolyline = "AcDbPolyline";
         public const string PolylineVertex = "AcDb2dVertex ";
         public const string Polyline3d = "AcDb3dPolyline";
@@ -72,11 +73,17 @@ namespace netDxf
         public const string PolyfaceMesh = "AcDbPolyFaceMesh";
         public const string PolyfaceMeshVertex = "AcDbPolyFaceMeshVertex";
         public const string PolyfaceMeshFace = "AcDbFaceRecord";
+        public const string Shape = "AcDbShape";
         public const string Solid = "AcDbTrace";
+        public const string Trace = "AcDbTrace";
         public const string Text = "AcDbText";
+        public const string Tolerance = "AcDbFcf";
+        public const string Wipeout = "AcDbWipeout";
         public const string Mesh = "AcDbSubDMesh";
         public const string MText = "AcDbMText";
         public const string Hatch = "AcDbHatch";
+        public const string Underlay = "AcDbUnderlayReference";
+        public const string UnderlayDefinition = "AcDbUnderlayDefinition";
         public const string Viewport = "AcDbViewport";
         public const string Attribute = "AcDbAttribute";
         public const string AttributeDefinition = "AcDbAttributeDefinition";

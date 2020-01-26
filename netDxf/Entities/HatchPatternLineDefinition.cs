@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,25 +16,28 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
+using System;
 using System.Collections.Generic;
+using netDxf.Tables;
 
 namespace netDxf.Entities
 {
     /// <summary>
     /// Defines a single line thats is part of a <see cref="HatchPattern">hatch pattern</see>.
     /// </summary>
-    public class HatchPatternLineDefinition
+    public class HatchPatternLineDefinition :
+        ICloneable
     {
         #region private fields
 
         private double angle;
         private Vector2 origin;
         private Vector2 delta;
-        private List<double> dashPattern;
+        private readonly List<double> dashPattern;
 
         #endregion
 
@@ -87,7 +90,7 @@ namespace netDxf.Entities
         }
 
         /// <summary>
-        /// Gets or sets the dash patter of the line it is equivalent as the segments of a <see cref="netDxf.Tables.LineType">LineType</see>.
+        /// Gets he dash pattern of the line it is equivalent as the segments of a <see cref="Linetype">Linetype</see>.
         /// </summary>
         /// <remarks>
         /// Positive values means solid segments and negative values means spaces (one entry per element).
@@ -95,7 +98,29 @@ namespace netDxf.Entities
         public List<double> DashPattern
         {
             get { return this.dashPattern; }
-            set { this.dashPattern = value; }
+        }
+
+        #endregion
+
+        #region overrides
+
+        /// <summary>
+        /// Creates a new HatchPatternLineDefinition that is a copy of the current instance.
+        /// </summary>
+        /// <returns>A new HatchPatternLineDefinition that is a copy of this instance.</returns>
+        public object Clone()
+        {
+            HatchPatternLineDefinition copy = new HatchPatternLineDefinition
+            {
+                Angle = this.angle,
+                Origin = this.origin,
+                Delta = this.delta,
+            };
+
+            foreach (double dash in this.dashPattern)
+                copy.DashPattern.Add(dash);
+
+            return copy;
         }
 
         #endregion

@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,26 +16,22 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
-using System;
-
 namespace netDxf
 {
-
     /// <summary>
-    /// Represents the base class for all dxf objects.
+    /// Represents the base class for all DXF objects.
     /// </summary>
     public abstract class DxfObject
     {
+        #region private fields
 
-        #region protected fields
-
-        protected readonly string codeName;
-        protected string handle;
-        protected DxfObject owner;
+        private string codename;
+        private string handle;
+        private DxfObject owner;
 
         #endregion
 
@@ -44,10 +40,10 @@ namespace netDxf
         /// <summary>
         /// Initializes a new instance of the <c>DxfObject</c> class.
         /// </summary>
-        /// <param name="codeName">Object name.</param>
-        protected DxfObject(string codeName)
+        /// <param name="codename"><see cref="DxfObjectCode">DXF object name</see>.</param>
+        protected DxfObject(string codename)
         {
-            this.codeName = codeName;
+            this.codename = codename;
             this.handle = null;
             this.owner = null;
         }
@@ -57,51 +53,50 @@ namespace netDxf
         #region public properties
 
         /// <summary>
-        /// Gets the dxf entity type string.
+        /// Gets the <see cref="DxfObjectCode">DXF object name</see>.
         /// </summary>
         public string CodeName
         {
-            get { return this.codeName; }
+            get { return this.codename; }
+            protected set { this.codename = value; }
         }
 
         /// <summary>
-        /// Gets the handle asigned to the dxf object.
+        /// Gets the handle assigned to the DXF object.
         /// </summary>
-        /// <remarks>The handle is a unique hexadecimal number asigned automatically to every dxf object.</remarks>
+        /// <remarks>
+        /// The handle is a unique hexadecimal number assigned automatically to every DXF object,
+        /// that has been added to a <see cref="DxfDocument">DxfDocument</see>.
+        /// </remarks>
         public string Handle
         {
             get { return this.handle; }
-            internal set
-            {
-                if (value == null)
-                    throw new ArgumentNullException("value");
-                this.handle = value;
-            }
+            internal set { this.handle = value; }
         }
 
         /// <summary>
-        /// Gets the owner of the actual dxf object.
+        /// Gets the owner of the actual <see cref="DxfObject">DxfObject</see>.
         /// </summary>
-        internal virtual DxfObject Owner
+        public DxfObject Owner
         {
             get { return this.owner; }
-            set { this.owner = value; }
+            internal set { this.owner = value; }
         }
 
         #endregion
 
-        #region public methods
+        #region internal methods
 
         /// <summary>
-        /// Asigns a handle to the object based in a integer counter.
+        /// Assigns a handle to the object based in a integer counter.
         /// </summary>
-        /// <param name="entityNumber">Number to asign.</param>
-        /// <returns>Next avaliable entity number.</returns>
+        /// <param name="entityNumber">Number to assign to the actual object.</param>
+        /// <returns>Next available entity number.</returns>
         /// <remarks>
-        /// Some objects might consume more than one, is, for example, the case of polylines that will asign
+        /// Some objects might consume more than one, is, for example, the case of polylines that will assign
         /// automatically a handle to its vertexes. The entity number will be converted to an hexadecimal number.
         /// </remarks>
-        internal virtual long AsignHandle(long entityNumber)
+        internal virtual long AssignHandle(long entityNumber)
         {
             this.handle = entityNumber.ToString("X");
             return entityNumber + 1;
@@ -112,12 +107,12 @@ namespace netDxf
         #region overrides
 
         /// <summary>
-        /// Obtains a string that represents the dxf object.
+        /// Obtains a string that represents the DXF object.
         /// </summary>
         /// <returns>A string text.</returns>
         public override string ToString()
         {
-            return codeName;
+            return this.codename;
         }
 
         #endregion

@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2009 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2009 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -35,37 +35,45 @@ namespace netDxf.Entities
         /// Default, open polyline.
         /// </summary>
         OpenPolyline = 0,
+
         /// <summary>
         /// This is a closed polyline (or a polygon mesh closed in the M direction).
         /// </summary>
         ClosedPolylineOrClosedPolygonMeshInM = 1,
+
         /// <summary>
-        /// Curve-fit vertices have been added.
+        /// Curve-fit vertexes have been added.
         /// </summary>
         CurveFit = 2,
+
         /// <summary>
-        /// Spline-fit vertices have been added.
+        /// Spline-fit vertexes have been added.
         /// </summary>
         SplineFit = 4,
+
         /// <summary>
         /// This is a 3D polyline.
         /// </summary>
         Polyline3D = 8,
+
         /// <summary>
         /// This is a 3D polygon mesh.
         /// </summary>
         PolygonMesh = 16,
+
         /// <summary>
         /// The polygon mesh is closed in the N direction.
         /// </summary>
         ClosedPolygonMeshInN = 32,
+
         /// <summary>
         /// The polyline is a polyface mesh.
         /// </summary>
         PolyfaceMesh = 64,
+
         /// <summary>
-        /// The linetype pattern is generated continuously around the vertices of this polyline.
+        /// The line type pattern is generated continuously around the vertexes of this polyline.
         /// </summary>
-        ContinuousLineTypePatter = 128
+        ContinuousLinetypePattern = 128
     }
 }

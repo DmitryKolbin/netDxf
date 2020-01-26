@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,9 +16,11 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
+
+using netDxf.Units;
 
 namespace netDxf.Objects
 {
@@ -46,7 +48,7 @@ namespace netDxf.Objects
         {
             this.displayFrame = true;
             this.quality = ImageDisplayQuality.High;
-            this.units = ImageUnits.Millimeters;
+            this.units = ImageUnits.Unitless;
         }
 
         #endregion
@@ -75,8 +77,9 @@ namespace netDxf.Objects
         /// Gets or sets the AutoCAD units for inserting images.
         /// </summary>
         /// <remarks>
+        /// Default: None<br />
         /// This is what one AutoCAD unit is equal to for the purpose of inserting and scaling images with an associated resolution.
-        /// It is recommended to use the same units as the header variable InsUnits.
+        /// It is recommended to use the same units as the header variable InsUnits, or just use none to avoid any unwanted scaling when inserting images into the drawing.
         /// </remarks>
         public ImageUnits Units
         {

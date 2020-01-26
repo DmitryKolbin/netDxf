@@ -1,7 +1,7 @@
-#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+#region netDxf library, Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,13 +16,14 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 using System;
 using System.Collections.Generic;
 using netDxf.Objects;
+using netDxf.Tables;
 
 namespace netDxf.Collections
 {
@@ -30,24 +31,19 @@ namespace netDxf.Collections
     /// Represents a collection of image definitions.
     /// </summary>
     public sealed class ImageDefinitions :
-        TableObjects<ImageDef>
+        TableObjects<ImageDefinition>
     {
-
         #region constructor
 
-        internal ImageDefinitions(DxfDocument document, string handle = null)
-            : this(document,0,handle)
+        internal ImageDefinitions(DxfDocument document)
+            : this(document, null)
         {
         }
 
-        internal ImageDefinitions(DxfDocument document, int capacity, string handle = null)
-            : base(document,
-            new Dictionary<string, ImageDef>(capacity, StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, List<DxfObject>>(capacity, StringComparer.OrdinalIgnoreCase),
-            StringCode.ImageDefDictionary,
-            handle)
+        internal ImageDefinitions(DxfDocument document, string handle)
+            : base(document, DxfObjectCode.ImageDefDictionary, handle)
         {
-            this.maxCapacity = int.MaxValue;
+            this.MaxCapacity = int.MaxValue;
         }
 
         #endregion
@@ -57,70 +53,98 @@ namespace netDxf.Collections
         /// <summary>
         /// Adds an image definition to the list.
         /// </summary>
-        /// <param name="imageDef"><see cref="ImageDef">ImageDef</see> to add to the list.</param>
+        /// <param name="imageDefinition"><see cref="ImageDefinition">ImageDefinition</see> to add to the list.</param>
+        /// <param name="assignHandle">Specifies if a handle needs to be generated for the image definition parameter.</param>
         /// <returns>
         /// If an image definition already exists with the same name as the instance that is being added the method returns the existing image definition,
         /// if not it will return the new image definition.
         /// </returns>
-        internal override ImageDef Add(ImageDef imageDef, bool assignHandle)
+        internal override ImageDefinition Add(ImageDefinition imageDefinition, bool assignHandle)
         {
-            if (this.list.Count >= this.maxCapacity)
-                throw new OverflowException(String.Format("Table overflow. The maximum number of elements the table {0} can have is {1}", this.codeName, this.maxCapacity));
+            if (this.list.Count >= this.MaxCapacity)
+                throw new OverflowException(string.Format("Table overflow. The maximum number of elements the table {0} can have is {1}", this.CodeName, this.MaxCapacity));
+            if (imageDefinition == null)
+                throw new ArgumentNullException(nameof(imageDefinition));
 
-            ImageDef add;
-            if (this.list.TryGetValue(imageDef.Name, out add))
+            ImageDefinition add;
+            if (this.list.TryGetValue(imageDefinition.Name, out add))
                 return add;
 
-            if (assignHandle)
-                this.document.NumHandles = imageDef.AsignHandle(this.document.NumHandles);
+            if (assignHandle || string.IsNullOrEmpty(imageDefinition.Handle))
+                this.Owner.NumHandles = imageDefinition.AssignHandle(this.Owner.NumHandles);
 
-            this.document.AddedObjects.Add(imageDef.Handle, imageDef);
-            this.list.Add(imageDef.Name, imageDef);
-            this.references.Add(imageDef.Name, new List<DxfObject>());
-            imageDef.Owner = this;
-            return imageDef;
+            this.list.Add(imageDefinition.Name, imageDefinition);
+            this.references.Add(imageDefinition.Name, new List<DxfObject>());
+
+            imageDefinition.Owner = this;
+
+            imageDefinition.NameChanged += this.Item_NameChanged;
+
+            this.Owner.AddedObjects.Add(imageDefinition.Handle, imageDefinition);
+
+            return imageDefinition;
         }
 
         /// <summary>
         /// Removes an image definition.
         /// </summary>
-        /// <param name="name"><see cref="ImageDef">ImageDef</see> name to remove from the document.</param>
-        /// <returns>True is the image definition has been successfully removed, or false otherwise.</returns>
+        /// <param name="name"><see cref="ImageDefinition">ImageDefinition</see> name to remove from the document.</param>
+        /// <returns>True if the image definition has been successfully removed, or false otherwise.</returns>
         /// <remarks>Any image definition referenced by objects cannot be removed.</remarks>
         public override bool Remove(string name)
         {
-            return Remove(this[name]);
+            return this.Remove(this[name]);
         }
 
         /// <summary>
         /// Removes an image definition.
         /// </summary>
-        /// <param name="imageDef"><see cref="ImageDef">ImageDef</see> to remove from the document.</param>
-        /// <returns>True is the image definition has been successfully removed, or false otherwise.</returns>
+        /// <param name="item"><see cref="ImageDefinition">ImageDefinition</see> to remove from the document.</param>
+        /// <returns>True if the image definition has been successfully removed, or false otherwise.</returns>
         /// <remarks>Any image definition referenced by objects cannot be removed.</remarks>
-        public override bool Remove(ImageDef imageDef)
+        public override bool Remove(ImageDefinition item)
         {
-            if (imageDef == null)
+            if (item == null)
                 return false;
 
-            if (!this.Contains(imageDef))
+            if (!this.Contains(item))
                 return false;
 
-            if (imageDef.IsReserved)
+            if (item.IsReserved)
                 return false;
 
-            if (this.references[imageDef.Name].Count != 0)
+            if (this.references[item.Name].Count != 0)
                 return false;
 
-            imageDef.Owner = null;
-            this.document.AddedObjects.Remove(imageDef.Handle);
-            this.references.Remove(imageDef.Name);
-            this.list.Remove(imageDef.Name);
+            this.Owner.AddedObjects.Remove(item.Handle);
+            this.references.Remove(item.Name);
+            this.list.Remove(item.Name);
+
+            item.Handle = null;
+            item.Owner = null;
+
+            item.NameChanged -= this.Item_NameChanged;
 
             return true;
         }
 
         #endregion
 
+        #region TableObject events
+
+        private void Item_NameChanged(TableObject sender, TableObjectChangedEventArgs<string> e)
+        {
+            if (this.Contains(e.NewValue))
+                throw new ArgumentException("There is already another image definition with the same name.");
+
+            this.list.Remove(sender.Name);
+            this.list.Add(e.NewValue, (ImageDefinition) sender);
+
+            List<DxfObject> refs = this.references[sender.Name];
+            this.references.Remove(sender.Name);
+            this.references.Add(e.NewValue, refs);
+        }
+
+        #endregion
     }
 }

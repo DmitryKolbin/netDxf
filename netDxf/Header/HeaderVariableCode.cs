@@ -1,7 +1,7 @@
-#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -25,7 +25,7 @@ namespace netDxf.Header
     /// <summary>
     /// Strings system variables
     /// </summary>
-    internal static class HeaderVariableCode
+    public static class HeaderVariableCode
     {
         /// <summary>
         /// The AutoCAD drawing database version number.
@@ -68,7 +68,7 @@ namespace netDxf.Header
         public const string CeColor = "$CECOLOR";
 
         /// <summary>
-        /// Current entity linetype scale.
+        /// Current entity line type scale.
         /// </summary>
         public const string CeLtScale = "$CELTSCALE";
 
@@ -78,7 +78,7 @@ namespace netDxf.Header
         public const string CeLweight = "$CELWEIGHT";
 
         /// <summary>
-        /// Current entity linetype name.
+        /// Current entity line type name.
         /// </summary>
         public const string CeLtype = "$CELTYPE";
 
@@ -103,7 +103,7 @@ namespace netDxf.Header
         public const string CMLStyle = "$CMLSTYLE";
 
         /// <summary>
-        /// Current dimension style name
+        /// Current dimension style name.
         /// </summary>
         public const string DimStyle = "$DIMSTYLE";
 
@@ -148,10 +148,18 @@ namespace netDxf.Header
         public const string Extnames = "$EXTNAMES";
 
         /// <summary>
+        /// Insertion base point for the current drawing.
+        /// </summary>
+        /// <remarks>
+        /// When you insert or externally reference the current drawing into other drawings, this base point is used as the insertion base point.
+        /// </remarks>
+        public const string InsBase = "$INSBASE";
+
+        /// <summary>
         /// Default drawing units for AutoCAD DesignCenter blocks.
         /// </summary>
         /// <remarks>
-        /// Also applies to raster image units, eventhought they have the RasterVariables object and units in ImageDef.
+        /// Also applies to raster image units, even thought they have the RasterVariables object and units in ImageDefinition.
         /// </remarks>
         public const string InsUnits = "$INSUNITS";
 
@@ -169,11 +177,15 @@ namespace netDxf.Header
         /// </remarks>
         public const string LwDisplay = "$LWDISPLAY";
 
-
         /// <summary>
-        /// Global linetype scale.
+        /// Global line type scale.
         /// </summary>
         public const string LtScale = "$LTSCALE";
+
+        /// <summary>
+        /// Controls if the text will be mirrored during a symmetry.
+        /// </summary>
+        public const string MirrText  = "$MIRRTEXT";
 
         /// <summary>
         /// Controls the <see cref="PointShape">shape</see> to draw a point entity.
@@ -191,13 +203,22 @@ namespace netDxf.Header
         public const string PdSize = "$PDSIZE";
 
         /// <summary>
-        /// Governs the generation of linetype patterns around the vertices of a 2D polyline.
+        /// Governs the generation of line type patterns around the vertexes of a 2D polyline.
         /// </summary>
         /// <remarks>
-        /// 1 = Linetype is generated in a continuous pattern around vertices of the polyline.<br />
+        /// 1 = Line type is generated in a continuous pattern around vertexes of the polyline.<br />
         /// 0 = Each segment of the polyline starts and ends with a dash.
         /// </remarks>
         public const string PLineGen = "$PLINEGEN";
+
+        /// <summary>
+        /// Controls paper space line type scaling.
+        /// </summary>
+        /// <remarks>
+        /// 1 = No special line type scaling.<br />
+        /// 0 = Viewport scaling governs line type scaling.
+        /// </remarks>
+        public const string PsLtScale = "$PSLTSCALE";
 
         /// <summary>
         /// Local date/time of drawing creation.
@@ -224,8 +245,19 @@ namespace netDxf.Header
         /// </summary>
         public const string TdinDwg = "$TDINDWG";
 
-        public const string ExtMin = "$EXTMIN";
+        /// <summary>
+        /// Origin of current UCS (in WCS).
+        /// </summary>
+        public const string UcsOrg = "$UCSORG";
 
-        public const string ExtMax = "$EXTMAX";
+        /// <summary>
+        /// Direction of the current UCS X axis (in WCS).
+        /// </summary>
+        public const string UcsXDir = "$UCSXDIR";
+
+        /// <summary>
+        /// Direction of the current UCS Y axis (in WCS).
+        /// </summary>
+        public const string UcsYDir = "$UCSYDIR";
     }
 }

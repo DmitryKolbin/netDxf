@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2012 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2012 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -32,8 +32,8 @@ namespace netDxf.Entities
     {
         #region private fields
 
-        private Vector2 location;
-        private double beginWidth;
+        private Vector2 position;
+        private double startWidth;
         private double endWidth;
         private double bulge;
 
@@ -49,14 +49,23 @@ namespace netDxf.Entities
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <c>LwPolylineVertex</c> class.
+        /// </summary>
+        /// <param name="x">X coordinate.</param>
+        /// <param name="y">Y coordinate.</param>
+        public LwPolylineVertex(double x, double y)
+            : this(new Vector2(x, y), 0.0)
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <c>LwPolylineVertex</c> class.
         /// </summary>
         /// <param name="x">X coordinate.</param>
         /// <param name="y">Y coordinate.</param>
-        /// <param name="bulge">Vertex bulge.</param>
-        public LwPolylineVertex(double x, double y, double bulge = 0.0)
+        /// <param name="bulge">Vertex bulge  (default: 0.0).</param>
+        public LwPolylineVertex(double x, double y, double bulge)
             : this(new Vector2(x, y), bulge)
         {
         }
@@ -64,13 +73,22 @@ namespace netDxf.Entities
         /// <summary>
         /// Initializes a new instance of the <c>LwPolylineVertex</c> class.
         /// </summary>
-        /// <param name="location">Lightweight polyline <see cref="Vector2">vertex</see> coordinates.</param>
-        /// <param name="bulge">Vertex bulge.</param>
-        public LwPolylineVertex(Vector2 location, double bulge = 0.0)
+        /// <param name="position">Lightweight polyline <see cref="Vector2">vertex</see> coordinates.</param>
+        public LwPolylineVertex(Vector2 position)
+            : this(position, 0.0)
         {
-            this.location = location;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <c>LwPolylineVertex</c> class.
+        /// </summary>
+        /// <param name="position">Lightweight polyline <see cref="Vector2">vertex</see> coordinates.</param>
+        /// <param name="bulge">Vertex bulge  (default: 0.0).</param>
+        public LwPolylineVertex(Vector2 position, double bulge)
+        {
+            this.position = position;
             this.bulge = bulge;
-            this.beginWidth = 0.0;
+            this.startWidth = 0.0;
             this.endWidth = 0.0;
         }
 
@@ -79,30 +97,42 @@ namespace netDxf.Entities
         #region public properties
 
         /// <summary>
-        /// Gets or sets the light weight polyline vertex <see cref="Vector2">location</see>.
+        /// Gets or sets the light weight polyline vertex <see cref="Vector2">position</see>.
         /// </summary>
-        public Vector2 Location
+        public Vector2 Position
         {
-            get { return this.location; }
-            set { this.location = value; }
+            get { return this.position; }
+            set { this.position = value; }
         }
 
         /// <summary>
-        /// Gets or sets the light weight polyline begin width.
+        /// Gets or sets the light weight polyline start segment width.
         /// </summary>
-        public double BeginWidth
+        /// <remarks>Widths greater than zero produce wide lines.</remarks>
+        public double StartWidth
         {
-            get { return this.beginWidth; }
-            set { this.beginWidth = value; }
+            get { return this.startWidth; }
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The LwPolylineVertex width must be equals or greater than zero.");
+                this.startWidth = value;
+            }
         }
 
         /// <summary>
-        /// Gets or sets the light weight polyline end width.
+        /// Gets or sets the light weight polyline end segment width.
         /// </summary>
+        /// <remarks>Widths greater than zero produce wide lines.</remarks>
         public double EndWidth
         {
             get { return this.endWidth; }
-            set { this.endWidth = value; }
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The LwPolylineVertex width must be equals or greater than zero.");
+                this.endWidth = value;
+            }
         }
 
         /// <summary>
@@ -129,7 +159,7 @@ namespace netDxf.Entities
         /// <returns>The string representation.</returns>
         public override string ToString()
         {
-            return String.Format("{0}: ({1})", "LwPolylineVertex", this.location);
+            return string.Format("{0}: ({1})", "LwPolylineVertex", this.position);
         }
 
         /// <summary>
@@ -139,12 +169,12 @@ namespace netDxf.Entities
         public object Clone()
         {
             return new LwPolylineVertex
-                {
-                    Location = this.location,
-                    Bulge = this.bulge,
-                    BeginWidth = this.beginWidth,
-                    EndWidth = this.endWidth
-                };
+            {
+                Position = this.position,
+                Bulge = this.bulge,
+                StartWidth = this.startWidth,
+                EndWidth = this.endWidth
+            };
         }
 
         #endregion

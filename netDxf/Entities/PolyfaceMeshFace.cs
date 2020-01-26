@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,11 +16,12 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 using System;
+using System.Collections.Generic;
 
 namespace netDxf.Entities
 {
@@ -28,7 +29,7 @@ namespace netDxf.Entities
     /// Represents a polyface mesh face. 
     /// </summary>
     /// <remarks>
-    /// The way the vertex indexes for a polyfacemesh are defined follows the dxf documentation.
+    /// The way the vertex indexes for a polyface mesh are defined follows the DXF documentation.
     /// The values of the vertex indexes specify one of the previously defined vertexes by the index in the list plus one.
     /// If the index is negative, the edge that begins with that vertex is invisible.
     /// For example if the vertex index in the list is 0 the vertex index for the face will be 1, and
@@ -36,12 +37,13 @@ namespace netDxf.Entities
     /// The maximum number of vertexes per face is 4.
     /// </remarks>
     public class PolyfaceMeshFace :
-        DxfObject, ICloneable
+        DxfObject,
+        ICloneable
     {
         #region private fields
 
         private readonly VertexTypeFlags flags;
-        private short[] vertexIndexes;
+        private readonly List<short> vertexIndexes;
 
         #endregion
 
@@ -62,16 +64,15 @@ namespace netDxf.Entities
         /// Initializes a new instance of the <c>PolyfaceMeshFace</c> class.
         /// </summary>
         /// <param name="vertexIndexes">Array of indexes to the vertex list of a polyface mesh that makes up the face.</param>
-        public PolyfaceMeshFace(short[] vertexIndexes)
+        public PolyfaceMeshFace(IEnumerable<short> vertexIndexes)
             : base(DxfObjectCode.Vertex)
         {
             if (vertexIndexes == null)
-                throw new ArgumentNullException("vertexIndexes");
-            if (vertexIndexes.Length>4)
-                throw new ArgumentOutOfRangeException("vertexIndexes", vertexIndexes.Length, "The maximun number of vertexes per face is 4");
-            
+                throw new ArgumentNullException(nameof(vertexIndexes));
             this.flags = VertexTypeFlags.PolyfaceMeshVertex;
-            this.vertexIndexes = vertexIndexes;
+            this.vertexIndexes = new List<short>(vertexIndexes);
+            if (this.vertexIndexes.Count > 4)
+                throw new ArgumentOutOfRangeException(nameof(vertexIndexes), this.vertexIndexes.Count, "The maximum number of vertexes per face is 4");
         }
 
         #endregion
@@ -79,21 +80,16 @@ namespace netDxf.Entities
         #region public properties
 
         /// <summary>
-        /// Gets or sets the array of indexes to the vertex list of a polyface mesh that makes up the face.
+        /// Gets the list of indexes to the vertex list of a polyface mesh that makes up the face.
         /// </summary>
-        public short[] VertexIndexes
+        public List<short> VertexIndexes
         {
             get { return this.vertexIndexes; }
-            set
-            {
-                if (value == null) 
-                    throw new ArgumentNullException("value");
-                if (value.Length > 4)
-                    throw new ArgumentOutOfRangeException("value", this.vertexIndexes.Length, "The maximun number of index vertexes in a face is 4");
-
-                this.vertexIndexes = value;
-            }
         }
+
+        #endregion
+
+        #region internal properties
 
         /// <summary>
         /// Gets the vertex type.
@@ -122,9 +118,7 @@ namespace netDxf.Entities
         /// <returns>A new PolyfaceMeshFace that is a copy of this instance.</returns>
         public object Clone()
         {
-            short[] copyVertexIndexes = new short[this.vertexIndexes.Length];
-            this.vertexIndexes.CopyTo(copyVertexIndexes, 0);
-            return new PolyfaceMeshFace(copyVertexIndexes);
+            return new PolyfaceMeshFace(this.vertexIndexes);
         }
 
         #endregion

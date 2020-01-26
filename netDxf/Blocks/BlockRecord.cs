@@ -1,7 +1,7 @@
-#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+#region netDxf library, Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,13 +16,15 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 using System;
 using netDxf.Collections;
 using netDxf.Objects;
+using netDxf.Tables;
+using netDxf.Units;
 
 namespace netDxf.Blocks
 {
@@ -30,16 +32,44 @@ namespace netDxf.Blocks
     /// Represent the record of a block in the tables section.
     /// </summary>
     public class BlockRecord :
-        DxfObject
+        DxfObject,
+        IHasXData
     {
+        #region delegates and events
+
+        //public delegate void XDataAddAppRegEventHandler(EntityObject sender, ObservableCollectionEventArgs<ApplicationRegistry> e);
+
+        public event XDataAddAppRegEventHandler XDataAddAppReg;
+
+        protected virtual void OnXDataAddAppRegEvent(ApplicationRegistry item)
+        {
+            XDataAddAppRegEventHandler ae = this.XDataAddAppReg;
+            if (ae != null)
+                ae(this, new ObservableCollectionEventArgs<ApplicationRegistry>(item));
+        }
+
+        //public delegate void XDataRemoveAppRegEventHandler(EntityObject sender, ObservableCollectionEventArgs<ApplicationRegistry> e);
+
+        public event XDataRemoveAppRegEventHandler XDataRemoveAppReg;
+
+        protected virtual void OnXDataRemoveAppRegEvent(ApplicationRegistry item)
+        {
+            XDataRemoveAppRegEventHandler ae = this.XDataRemoveAppReg;
+            if (ae != null)
+                ae(this, new ObservableCollectionEventArgs<ApplicationRegistry>(item));
+        }
+
+        #endregion
+
         #region private fields
 
-        private readonly string name;
+        private string name;
         private Layout layout;
         private static DrawingUnits defaultUnits = DrawingUnits.Unitless;
         private DrawingUnits units;
         private bool allowExploding;
         private bool scaleUniformly;
+        private readonly XDataDictionary xData;
 
         #endregion
 
@@ -49,16 +79,17 @@ namespace netDxf.Blocks
         /// Initializes a new instance of the <c>BlockRecord</c> class.
         /// </summary>
         /// <param name="name">Block definition name.</param>
-        public BlockRecord(string name)
+        internal BlockRecord(string name)
             : base(DxfObjectCode.BlockRecord)
         {
             if (string.IsNullOrEmpty(name))
-                throw (new ArgumentNullException("name"));
+                throw new ArgumentNullException(nameof(name));
             this.name = name;
             this.layout = null;
-            this.units = BlockRecord.DefaultUnits;
+            this.units = DefaultUnits;
             this.allowExploding = true;
             this.scaleUniformly = false;
+            this.xData = new XDataDictionary();
         }
 
         #endregion
@@ -69,12 +100,13 @@ namespace netDxf.Blocks
         /// Gets the name of the block record.
         /// </summary>
         /// <remarks>
-        /// Block record names are case unsensitive.<br />
+        /// Block record names are case insensitive.<br />
         /// The block which name starts with "*" are for internal purpose only.
         /// </remarks>
         public string Name
         {
             get { return this.name; }
+            internal set { this.name = value; }
         }
 
         /// <summary>
@@ -109,7 +141,7 @@ namespace netDxf.Blocks
         /// Gets or sets if the block can be exploded.
         /// </summary>
         /// <remarks>
-        /// This property is only compatible with dxf version AutoCad2007 and upwards.
+        /// This property is only compatible with DXF version AutoCad2007 and upwards.
         /// </remarks>
         public bool AllowExploding
         {
@@ -121,7 +153,7 @@ namespace netDxf.Blocks
         /// Gets or sets if the block must be scaled uniformly.
         /// </summary>
         /// <remarks>
-        /// This property is only compatible with dxf version AutoCad2007 and upwards.
+        /// This property is only compatible with DXF version AutoCad2007 and upwards.
         /// </remarks>
         public bool ScaleUniformly
         {
@@ -130,21 +162,31 @@ namespace netDxf.Blocks
         }
 
         /// <summary>
-        /// Gets the owner of the actual dxf object.
+        /// Gets the owner of the actual DXF object.
         /// </summary>
         public new BlockRecords Owner
         {
-            get { return (BlockRecords) this.owner; }
-            internal set { this.owner = value; }
+            get { return (BlockRecords) base.Owner; }
+            internal set { base.Owner = value; }
         }
 
         /// <summary>
         /// Gets if the block record is for internal use only.
         /// </summary>
-        /// <remarks>All blocks which name starts with "*" are for internal use and should not be modified.</remarks>
+        /// <remarks>
+        /// All blocks which name starts with "*" are for internal use and should not be modified.
+        /// </remarks>
         public bool IsForInternalUseOnly
         {
             get { return this.name.StartsWith("*"); }
+        }
+
+        /// <summary>
+        /// Gets the block record <see cref="XDataDictionary">extended data</see>.
+        /// </summary>
+        public XDataDictionary XData
+        {
+            get { return this.xData; }
         }
 
         #endregion

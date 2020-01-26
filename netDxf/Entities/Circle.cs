@@ -1,7 +1,7 @@
-#region netDxf, Copyright(C) 2013 Daniel Carvajal, Licensed under LGPL.
+#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,12 +16,13 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 using System;
 using System.Collections.Generic;
+using netDxf.Tables;
 
 namespace netDxf.Entities
 {
@@ -36,10 +37,18 @@ namespace netDxf.Entities
         private Vector3 center;
         private double radius;
         private double thickness;
-        
+
         #endregion
 
         #region constructors
+
+        /// <summary>
+        /// Initializes a new instance of the <c>Circle</c> class.
+        /// </summary>
+        public Circle()
+            : this(Vector3.Zero, 1.0)
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <c>Circle</c> class.
@@ -50,6 +59,8 @@ namespace netDxf.Entities
             : base(EntityType.Circle, DxfObjectCode.Circle)
         {
             this.center = center;
+            if (radius <= 0)
+                throw new ArgumentOutOfRangeException(nameof(radius), radius, "The circle radius must be greater than zero.");
             this.radius = radius;
             this.thickness = 0.0;
         }
@@ -61,14 +72,6 @@ namespace netDxf.Entities
         /// <param name="radius">Circle radius.</param>
         public Circle(Vector2 center, double radius)
             : this(new Vector3(center.X, center.Y, 0.0), radius)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <c>Circle</c> class.
-        /// </summary>
-        public Circle() 
-            : this(Vector3.Zero, 1.0)
         {
         }
 
@@ -91,7 +94,12 @@ namespace netDxf.Entities
         public double Radius
         {
             get { return this.radius; }
-            set { this.radius = value; }
+            set
+            {
+                if (value <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The circle radius must be greater than zero.");
+                this.radius = value;
+            }
         }
 
         /// <summary>
@@ -111,22 +119,22 @@ namespace netDxf.Entities
         /// Converts the circle in a list of vertexes.
         /// </summary>
         /// <param name="precision">Number of vertexes generated.</param>
-        /// <returns>A list vertexes that represents the circle expresed in object coordinate system.</returns>
-        public IList<Vector2> PolygonalVertexes(int precision)
+        /// <returns>A list vertexes that represents the circle expressed in object coordinate system.</returns>
+        public List<Vector2> PolygonalVertexes(int precision)
         {
             if (precision < 3)
-                throw new ArgumentOutOfRangeException("precision", precision, "The circle precision must be greater or equal to three");
+                throw new ArgumentOutOfRangeException(nameof(precision), precision, "The circle precision must be greater or equal to three");
 
             List<Vector2> ocsVertexes = new List<Vector2>();
 
-            double angle = MathHelper.TwoPI / precision;
+            double delta = MathHelper.TwoPI/precision;
 
             for (int i = 0; i < precision; i++)
             {
-                double sine = this.radius * Math.Sin(MathHelper.HalfPI + angle * i);
-                double cosine = this.radius * Math.Cos(MathHelper.HalfPI + angle * i);
+                double angle = delta*i;
+                double sine = this.radius*Math.Sin(angle);
+                double cosine = this.radius*Math.Cos(angle);
                 ocsVertexes.Add(new Vector2(cosine, sine));
-
             }
             return ocsVertexes;
         }
@@ -139,22 +147,21 @@ namespace netDxf.Entities
         public LwPolyline ToPolyline(int precision)
         {
             IEnumerable<Vector2> vertexes = this.PolygonalVertexes(precision);
-            Vector3 ocsCenter = MathHelper.Transform(this.Center, this.normal, MathHelper.CoordinateSystem.World, MathHelper.CoordinateSystem.Object);
+            Vector3 ocsCenter = MathHelper.Transform(this.Center, this.Normal, CoordinateSystem.World, CoordinateSystem.Object);
 
             LwPolyline poly = new LwPolyline
-                                {
-                                    Color = this.color,
-                                    IsVisible = this.isVisible,
-                                    Layer = this.layer,
-                                    LineType = this.lineType,
-                                    LineTypeScale = this.lineTypeScale,
-                                    Lineweight = this.lineweight,
-                                    XData = this.xData,
-                                    Normal = this.normal,
-                                    Elevation = ocsCenter.Z,
-                                    Thickness = this.thickness,
-                                    IsClosed = true
-                                };
+            {
+                Layer = (Layer) this.Layer.Clone(),
+                Linetype = (Linetype) this.Linetype.Clone(),
+                Color = (AciColor) this.Color.Clone(),
+                Lineweight = this.Lineweight,
+                Transparency = (Transparency) this.Transparency.Clone(),
+                LinetypeScale = this.LinetypeScale,
+                Normal = this.Normal,
+                Elevation = ocsCenter.Z,
+                Thickness = this.thickness,
+                IsClosed = true
+            };
             foreach (Vector2 v in vertexes)
             {
                 poly.Vertexes.Add(new LwPolylineVertex(v.X + ocsCenter.X, v.Y + ocsCenter.Y));
@@ -167,29 +174,64 @@ namespace netDxf.Entities
         #region overrides
 
         /// <summary>
+        /// Moves, scales, and/or rotates the current entity given a 3x3 transformation matrix and a translation vector.
+        /// </summary>
+        /// <param name="transformation">Transformation matrix.</param>
+        /// <param name="translation">Translation vector.</param>
+        /// <remarks>
+        /// Non-uniform scaling is not supported, create an ellipse from the circle data and transform that instead.<br />
+        /// Matrix3 adopts the convention of using column vectors to represent a transformation matrix.
+        /// </remarks>
+        public override void TransformBy(Matrix3 transformation, Vector3 translation)
+        {
+            Vector3 newCenter = transformation * this.Center + translation;
+            Vector3 newNormal = transformation * this.Normal;
+            if (Vector3.Equals(Vector3.Zero, newNormal)) newNormal = this.Normal;
+
+            Matrix3 transOW = MathHelper.ArbitraryAxis(this.Normal);
+            Matrix3 transWO = MathHelper.ArbitraryAxis(newNormal).Transpose();
+
+            Vector3 axis = transOW * new Vector3(this.Radius, 0.0, 0.0);
+            axis = transformation * axis;
+            axis = transWO * axis;
+            Vector2 axisPoint = new Vector2(axis.X, axis.Y);
+            double newRadius = axisPoint.Modulus();
+            if (MathHelper.IsZero(newRadius)) newRadius = MathHelper.Epsilon;
+
+            this.Normal = newNormal;
+            this.Center = newCenter;
+            this.Radius = newRadius;
+        }
+
+        /// <summary>
         /// Creates a new Circle that is a copy of the current instance.
         /// </summary>
         /// <returns>A new Circle that is a copy of this instance.</returns>
         public override object Clone()
         {
-            return new Circle
+            Circle entity = new Circle
             {
                 //EntityObject properties
-                Color = this.color,
-                Layer = this.layer,
-                LineType = this.lineType,
-                Lineweight = this.lineweight,
-                LineTypeScale = this.lineTypeScale,
-                Normal = this.normal,
-                XData = this.xData,
+                Layer = (Layer) this.Layer.Clone(),
+                Linetype = (Linetype) this.Linetype.Clone(),
+                Color = (AciColor) this.Color.Clone(),
+                Lineweight = this.Lineweight,
+                Transparency = (Transparency) this.Transparency.Clone(),
+                LinetypeScale = this.LinetypeScale,
+                Normal = this.Normal,
+                IsVisible = this.IsVisible,
                 //Circle properties
                 Center = this.center,
                 Radius = this.radius,
                 Thickness = this.thickness
             };
+
+            foreach (XData data in this.XData.Values)
+                entity.XData.Add((XData) data.Clone());
+
+            return entity;
         }
 
         #endregion
-
     }
 }

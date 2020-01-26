@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -25,13 +25,12 @@ using System.Globalization;
 
 namespace netDxf
 {
-
     /// <summary>
     /// Represents the transparency of a layer or an entity.
     /// </summary>
     /// <remarks>
     /// When the transparency of an entity is ByLayer the code 440 will not appear in the dxf,
-    /// but for comparision purposes the ByLayer transparency is assigned a value of -1.
+    /// but for comparison purposes the ByLayer transparency is assigned a value of -1.
     /// </remarks>
     public class Transparency :
         ICloneable,
@@ -39,7 +38,7 @@ namespace netDxf
     {
         #region private fields
 
-        private short value;
+        private short transparency;
 
         #endregion
 
@@ -50,7 +49,7 @@ namespace netDxf
         /// </summary>
         public static Transparency ByLayer
         {
-            get { return new Transparency { value = -1 }; }
+            get { return new Transparency {transparency = -1}; }
         }
 
         /// <summary>
@@ -58,7 +57,7 @@ namespace netDxf
         /// </summary>
         public static Transparency ByBlock
         {
-            get { return new Transparency { value = 100 }; }
+            get { return new Transparency {transparency = 100}; }
         }
 
         #endregion
@@ -70,7 +69,7 @@ namespace netDxf
         /// </summary>
         public Transparency()
         {
-            this.value = 0;
+            this.transparency = -1;
         }
 
         /// <summary>
@@ -83,8 +82,8 @@ namespace netDxf
         public Transparency(short value)
         {
             if (value < 0 || value > 90)
-                throw new ArgumentOutOfRangeException("value", value, "Accepted transparency values range from 0 to 90.");
-            this.value = value;
+                throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted transparency values range from 0 to 90.");
+            this.transparency = value;
         }
 
         #endregion
@@ -96,7 +95,7 @@ namespace netDxf
         /// </summary>
         public bool IsByLayer
         {
-            get { return this.value == -1; }
+            get { return this.transparency == -1; }
         }
 
         /// <summary>
@@ -104,7 +103,7 @@ namespace netDxf
         /// </summary>
         public bool IsByBlock
         {
-            get { return this.value == 100; }
+            get { return this.transparency == 100; }
         }
 
         /// <summary>
@@ -115,12 +114,12 @@ namespace netDxf
         /// </remarks>
         public short Value
         {
-            get { return value; }
+            get { return this.transparency; }
             set
             {
                 if (value < 0 || value > 90)
-                    throw new ArgumentOutOfRangeException("value", value, "Accepted transparency values range from 0 to 90.");
-                this.value = value;
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted transparency values range from 0 to 90.");
+                this.transparency = value;
             }
         }
 
@@ -128,22 +127,38 @@ namespace netDxf
 
         #region public methods
 
+        /// <summary>
+        /// Gets the transparency value from a <see cref="Transparency">transparency</see> object.
+        /// </summary>
+        /// <param name="transparency">A <see cref="Transparency">transparency</see>.</param>
+        /// <returns>A transparency value.</returns>
         public static int ToAlphaValue(Transparency transparency)
         {
-            byte alpha = (byte)(255 * (100 - transparency.Value) / 100.0);
+            if (transparency == null)
+                throw new ArgumentNullException(nameof(transparency));
+
+            byte alpha = (byte) (255*(100 - transparency.Value)/100.0);
             byte[] bytes = {alpha, 0, 0, 2};
             if (transparency.IsByBlock)
                 bytes[3] = 1;
-
             return BitConverter.ToInt32(bytes, 0);
         }
 
+        /// <summary>
+        /// Gets the <see cref="Transparency">transparency</see> object from a transparency value.
+        /// </summary>
+        /// <param name="value">A transparency value.</param>
+        /// <returns>A <see cref="Transparency">transparency</see></returns>
         public static Transparency FromAlphaValue(int value)
         {
             byte[] bytes = BitConverter.GetBytes(value);
-            short alpha = (short)(100 - (bytes[0] / 255.0) * 100);
+            short alpha = (short) (100 - (bytes[0]/255.0)*100);
             return FromCadIndex(alpha);
         }
+
+        #endregion
+
+        #region private methods
 
         private static Transparency FromCadIndex(short alpha)
         {
@@ -151,7 +166,7 @@ namespace netDxf
                 return ByLayer;
             if (alpha == 100)
                 return ByBlock;
-            
+
             return new Transparency(alpha);
         }
 
@@ -160,15 +175,12 @@ namespace netDxf
         #region implements ICloneable
 
         /// <summary>
-        /// Creates a new object that is a copy of the current instance.
+        /// Creates a new transparency that is a copy of the current instance.
         /// </summary>
-        /// <returns>A new object that is a copy of this instance.</returns>
-        public Object Clone()
+        /// <returns>A new transparency that is a copy of this instance.</returns>
+        public object Clone()
         {
-            return new Transparency
-                       {
-                           value = this.value
-                       };
+            return FromCadIndex(this.transparency);
         }
 
         #endregion
@@ -178,11 +190,14 @@ namespace netDxf
         /// <summary>
         /// Check if the components of two transparencies are equal.
         /// </summary>
-        /// <param name="obj">Another transparency to compare to.</param>
-        /// <returns>True if their indexes are equal or false in anyother case.</returns>
-        public bool Equals(Transparency obj)
+        /// <param name="other">Another transparency to compare to.</param>
+        /// <returns>True if their indexes are equal or false in any other case.</returns>
+        public bool Equals(Transparency other)
         {
-            return obj.value == this.value;
+            if (other == null)
+                return false;
+
+            return other.transparency == this.transparency;
         }
 
         #endregion
@@ -195,15 +210,14 @@ namespace netDxf
         /// <returns>The string representation.</returns>
         public override string ToString()
         {
-            if (this.value == -1)
+            if (this.transparency == -1)
                 return "ByLayer";
-            if (this.value == 100)
+            if (this.transparency == 100)
                 return "ByBlock";
 
-            return this.value.ToString(CultureInfo.CurrentCulture);
+            return this.transparency.ToString(CultureInfo.CurrentCulture);
         }
 
         #endregion
-
     }
 }

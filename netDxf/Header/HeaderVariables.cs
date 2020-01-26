@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -24,21 +24,19 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using netDxf.Entities;
+using netDxf.Units;
 
 namespace netDxf.Header
 {
     /// <summary>
-    /// Represents the header variables of a dxf document.
+    /// Represents the header variables of a DXF document.
     /// </summary>
-    /// <remarks>
-    /// The names of header variables are the same as they appear in the official dxf documentation but without the $,
-    /// check it in case of doubt on what they represent.
-    /// </remarks>
     public class HeaderVariables
     {
         #region private fields
 
         private readonly Dictionary<string, HeaderVariable> variables;
+        private readonly Dictionary<string, HeaderVariable> customVariables;
 
         #endregion
 
@@ -50,45 +48,51 @@ namespace netDxf.Header
         /// <remarks>The default values are the same ones that are apply to a new AutoCad drawing.</remarks>
         public HeaderVariables()
         {
-            this.variables = new Dictionary<string, HeaderVariable>
+            this.variables = new Dictionary<string, HeaderVariable>(StringComparer.OrdinalIgnoreCase)
             {
-                {HeaderVariableCode.AcadVer, new HeaderVariable(HeaderVariableCode.AcadVer, DxfVersion.AutoCad2000)},
-                {HeaderVariableCode.DwgCodePage, new HeaderVariable(HeaderVariableCode.DwgCodePage, "ANSI_" + Encoding.Default.WindowsCodePage)},
-                {HeaderVariableCode.LastSavedBy, new HeaderVariable(HeaderVariableCode.LastSavedBy, Environment.UserName)},
-                {HeaderVariableCode.HandleSeed, new HeaderVariable(HeaderVariableCode.HandleSeed, "1")},
-                {HeaderVariableCode.Angbase, new HeaderVariable(HeaderVariableCode.Angbase, 0.0)},
-                {HeaderVariableCode.Angdir, new HeaderVariable(HeaderVariableCode.Angdir, (short) 0)},
-                {HeaderVariableCode.AttMode, new HeaderVariable(HeaderVariableCode.AttMode, AttMode.Normal)},
-                {HeaderVariableCode.AUnits, new HeaderVariable(HeaderVariableCode.AUnits, AngleUnitType.DecimalDegrees)},
-                {HeaderVariableCode.AUprec, new HeaderVariable(HeaderVariableCode.AUprec, (short) 0)},
-                {HeaderVariableCode.CeColor, new HeaderVariable(HeaderVariableCode.CeColor, AciColor.ByLayer)},
-                {HeaderVariableCode.CeLtScale, new HeaderVariable(HeaderVariableCode.CeLtScale, 1.0)},
-                {HeaderVariableCode.CeLtype, new HeaderVariable(HeaderVariableCode.CeLtype, "ByLayer")},
-                {HeaderVariableCode.CeLweight, new HeaderVariable(HeaderVariableCode.CeLweight, Lineweight.ByLayer)},
-                {HeaderVariableCode.CLayer, new HeaderVariable(HeaderVariableCode.CLayer, "0")},
-                {HeaderVariableCode.CMLJust, new HeaderVariable(HeaderVariableCode.CMLJust, MLineJustification.Top)},
-                {HeaderVariableCode.CMLScale, new HeaderVariable(HeaderVariableCode.CMLScale, 20.0)},
-                {HeaderVariableCode.CMLStyle, new HeaderVariable(HeaderVariableCode.CMLStyle, "Standard")},
-                {HeaderVariableCode.DimStyle, new HeaderVariable(HeaderVariableCode.DimStyle, "Standard")},
-                {HeaderVariableCode.TextSize, new HeaderVariable(HeaderVariableCode.TextSize, 2.5)},
-                {HeaderVariableCode.TextStyle, new HeaderVariable(HeaderVariableCode.TextStyle, "Standard")},
-                {HeaderVariableCode.LUnits, new HeaderVariable(HeaderVariableCode.LUnits, LinearUnitType.Decimal)},
-                {HeaderVariableCode.LUprec, new HeaderVariable(HeaderVariableCode.LUprec, (short) 4)},
-                {HeaderVariableCode.Extnames, new HeaderVariable(HeaderVariableCode.Extnames, true)},
-                {HeaderVariableCode.InsUnits, new HeaderVariable(HeaderVariableCode.InsUnits, DrawingUnits.Unitless)},
-                {HeaderVariableCode.LtScale, new HeaderVariable(HeaderVariableCode.LtScale, 1.0)},
-                {HeaderVariableCode.LwDisplay, new HeaderVariable(HeaderVariableCode.LwDisplay, false)},
-                {HeaderVariableCode.PdMode, new HeaderVariable(HeaderVariableCode.PdMode, PointShape.Dot)},
-                {HeaderVariableCode.PdSize, new HeaderVariable(HeaderVariableCode.PdSize, 0.0)},
-                {HeaderVariableCode.PLineGen, new HeaderVariable(HeaderVariableCode.PLineGen, (short) 0)},
-                {HeaderVariableCode.TdCreate, new HeaderVariable(HeaderVariableCode.TdCreate, DateTime.Now)},
-                {HeaderVariableCode.TduCreate, new HeaderVariable(HeaderVariableCode.TduCreate, DateTime.UtcNow)},
-                {HeaderVariableCode.TdUpdate, new HeaderVariable(HeaderVariableCode.TdUpdate, DateTime.Now)},
-                {HeaderVariableCode.TduUpdate, new HeaderVariable(HeaderVariableCode.TduUpdate, DateTime.UtcNow)},
-                {HeaderVariableCode.TdinDwg, new HeaderVariable(HeaderVariableCode.TdinDwg, new TimeSpan())},
-                {HeaderVariableCode.ExtMin, new HeaderVariable(HeaderVariableCode.ExtMin, new Vector3())},
-                {HeaderVariableCode.ExtMax, new HeaderVariable(HeaderVariableCode.ExtMax, new Vector3())},
+                {HeaderVariableCode.AcadVer, new HeaderVariable(HeaderVariableCode.AcadVer, 1, DxfVersion.AutoCad2000)},
+                {HeaderVariableCode.DwgCodePage, new HeaderVariable(HeaderVariableCode.DwgCodePage, 3, "ANSI_" + Encoding.ASCII.WindowsCodePage)},
+                {HeaderVariableCode.LastSavedBy, new HeaderVariable(HeaderVariableCode.LastSavedBy, 1, Environment.UserName)},
+                {HeaderVariableCode.HandleSeed, new HeaderVariable(HeaderVariableCode.HandleSeed, 5, "1")},
+                {HeaderVariableCode.Angbase, new HeaderVariable(HeaderVariableCode.Angbase, 50, 0.0)},
+                {HeaderVariableCode.Angdir, new HeaderVariable(HeaderVariableCode.Angdir, 70, AngleDirection.CCW)},
+                {HeaderVariableCode.AttMode, new HeaderVariable(HeaderVariableCode.AttMode, 70, AttMode.Normal)},
+                {HeaderVariableCode.AUnits, new HeaderVariable(HeaderVariableCode.AUnits, 70, AngleUnitType.DecimalDegrees)},
+                {HeaderVariableCode.AUprec, new HeaderVariable(HeaderVariableCode.AUprec, 70, (short) 0)},
+                {HeaderVariableCode.CeColor, new HeaderVariable(HeaderVariableCode.CeColor, 62, AciColor.ByLayer)},
+                {HeaderVariableCode.CeLtScale, new HeaderVariable(HeaderVariableCode.CeLtScale, 40, 1.0)},
+                {HeaderVariableCode.CeLtype, new HeaderVariable(HeaderVariableCode.CeLtype, 6, "ByLayer")},
+                {HeaderVariableCode.CeLweight, new HeaderVariable(HeaderVariableCode.CeLweight, 370, Lineweight.ByLayer)},
+                {HeaderVariableCode.CLayer, new HeaderVariable(HeaderVariableCode.CLayer,  8, "0")},
+                {HeaderVariableCode.CMLJust, new HeaderVariable(HeaderVariableCode.CMLJust, 70, MLineJustification.Top)},
+                {HeaderVariableCode.CMLScale, new HeaderVariable(HeaderVariableCode.CMLScale, 40, 20.0)},
+                {HeaderVariableCode.CMLStyle, new HeaderVariable(HeaderVariableCode.CMLStyle, 2, "Standard")},
+                {HeaderVariableCode.DimStyle, new HeaderVariable(HeaderVariableCode.DimStyle, 2, "Standard")},
+                {HeaderVariableCode.TextSize, new HeaderVariable(HeaderVariableCode.TextSize, 40, 2.5)},
+                {HeaderVariableCode.TextStyle, new HeaderVariable(HeaderVariableCode.TextStyle, 7, "Standard")},
+                {HeaderVariableCode.LUnits, new HeaderVariable(HeaderVariableCode.LUnits, 70, LinearUnitType.Decimal)},
+                {HeaderVariableCode.LUprec, new HeaderVariable(HeaderVariableCode.LUprec, 70, (short) 4)},
+                {HeaderVariableCode.MirrText, new HeaderVariable(HeaderVariableCode.MirrText, 70, false)},
+                {HeaderVariableCode.Extnames, new HeaderVariable(HeaderVariableCode.Extnames, 290, true)},
+                {HeaderVariableCode.InsBase, new HeaderVariable(HeaderVariableCode.InsBase, 10, Vector3.Zero)},
+                {HeaderVariableCode.InsUnits, new HeaderVariable(HeaderVariableCode.InsUnits, 70, DrawingUnits.Unitless)},
+                {HeaderVariableCode.LtScale, new HeaderVariable(HeaderVariableCode.LtScale, 40, 1.0)},
+                {HeaderVariableCode.LwDisplay, new HeaderVariable(HeaderVariableCode.LwDisplay, 290, false)},
+                {HeaderVariableCode.PdMode, new HeaderVariable(HeaderVariableCode.PdMode, 70, PointShape.Dot)},
+                {HeaderVariableCode.PdSize, new HeaderVariable(HeaderVariableCode.PdSize, 40, 0.0)},
+                {HeaderVariableCode.PLineGen, new HeaderVariable(HeaderVariableCode.PLineGen, 70, (short) 0)},
+                {HeaderVariableCode.PsLtScale, new HeaderVariable(HeaderVariableCode.PsLtScale, 70, (short) 1)},
+                {HeaderVariableCode.TdCreate, new HeaderVariable(HeaderVariableCode.TdCreate, 40, DateTime.Now)},
+                {HeaderVariableCode.TduCreate, new HeaderVariable(HeaderVariableCode.TduCreate, 40, DateTime.UtcNow)},
+                {HeaderVariableCode.TdUpdate, new HeaderVariable(HeaderVariableCode.TdUpdate, 40, DateTime.Now)},
+                {HeaderVariableCode.TduUpdate, new HeaderVariable(HeaderVariableCode.TduUpdate, 40, DateTime.UtcNow)},
+                {HeaderVariableCode.TdinDwg, new HeaderVariable(HeaderVariableCode.TdinDwg, 40, new TimeSpan())},
+                {HeaderVariableCode.UcsOrg, new HeaderVariable(HeaderVariableCode.UcsOrg, 30, Vector3.Zero)},
+                {HeaderVariableCode.UcsXDir, new HeaderVariable(HeaderVariableCode.UcsXDir, 30, Vector3.UnitX)},
+                {HeaderVariableCode.UcsYDir, new HeaderVariable(HeaderVariableCode.UcsYDir, 30, Vector3.UnitY)}
             };
+
+            this.customVariables = new Dictionary<string, HeaderVariable>(StringComparer.OrdinalIgnoreCase);
         }
 
         #endregion
@@ -98,18 +102,15 @@ namespace netDxf.Header
         /// <summary>
         /// The AutoCAD drawing database version number.
         /// </summary>
-        /// <remarks>Only AutoCad2000 and higher dxf versions are supported.</remarks>
-        /// <exception cref="NotSupportedException">Only AutoCad2000 and higher dxf versions are supported.</exception>
+        /// <remarks>Only AutoCad2000 and higher DXF versions are supported.</remarks>
+        /// <exception cref="NotSupportedException">Only AutoCad2000 and higher DXF versions are supported.</exception>
         public DxfVersion AcadVer
         {
-            get
-            {
-                return (DxfVersion)this.variables[HeaderVariableCode.AcadVer].Value;
-            }
+            get { return (DxfVersion) this.variables[HeaderVariableCode.AcadVer].Value; }
             set
             {
                 if (value < DxfVersion.AutoCad2000)
-                    throw new NotSupportedException("Only AutoCad2000 and newer dxf versions are supported.");
+                        throw new NotSupportedException("Only AutoCad2000 and newer DXF versions are supported.");
                 this.variables[HeaderVariableCode.AcadVer].Value = value;
             }
         }
@@ -124,7 +125,7 @@ namespace netDxf.Header
         }
 
         /// <summary>
-        /// Angle 0 direction.
+        /// Angle 0 base.
         /// </summary>
         /// <remarks>Default value: 0.</remarks>
         public double Angbase
@@ -134,22 +135,22 @@ namespace netDxf.Header
         }
 
         /// <summary>
-        /// 1 = Clockwise angles, 0 = Counterclockwise.
+        /// The angle direction.
         /// </summary>
-        /// <remarks>Default value: 0.</remarks>
-        public short Angdir
+        /// <remarks>Default value: CCW.</remarks>
+        public AngleDirection Angdir
         {
-            get { return (short)this.variables[HeaderVariableCode.Angdir].Value; }
+            get { return (AngleDirection) this.variables[HeaderVariableCode.Angdir].Value; }
             internal set { this.variables[HeaderVariableCode.Angdir].Value = value; }
         }
 
         /// <summary>
         /// Attribute visibility.
         /// </summary>
-        /// <remarks>Default value: AttMode.Normal.</remarks>
+        /// <remarks>Default value: Normal.</remarks>
         public AttMode AttMode
         {
-            get { return (AttMode)this.variables[HeaderVariableCode.AttMode].Value; }
+            get { return (AttMode) this.variables[HeaderVariableCode.AttMode].Value; }
             set { this.variables[HeaderVariableCode.AttMode].Value = value; }
         }
 
@@ -159,7 +160,7 @@ namespace netDxf.Header
         /// <remarks>Default value: Decimal degrees.</remarks>
         public AngleUnitType AUnits
         {
-            get { return (AngleUnitType)this.variables[HeaderVariableCode.AUnits].Value; }
+            get { return (AngleUnitType) this.variables[HeaderVariableCode.AUnits].Value; }
             set { this.variables[HeaderVariableCode.AUnits].Value = value; }
         }
 
@@ -173,7 +174,7 @@ namespace netDxf.Header
             set
             {
                 if (value < 0 || value > 8)
-                    throw new ArgumentOutOfRangeException("value", "Valid values are integers from 0 to 8.");
+                    throw new ArgumentOutOfRangeException(nameof(value), "Valid values are integers from 0 to 8.");
                 this.variables[HeaderVariableCode.AUprec].Value = value;
             }
         }
@@ -188,13 +189,13 @@ namespace netDxf.Header
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value", "The current entity color cannot be null.");
+                    throw new ArgumentNullException(nameof(value));
                 this.variables[HeaderVariableCode.CeColor].Value = value;
             }
         }
 
         /// <summary>
-        /// Current entity linetype scale.
+        /// Current entity line type scale.
         /// </summary>
         /// <remarks>Default value: 1.0.</remarks>
         public double CeLtScale
@@ -203,28 +204,23 @@ namespace netDxf.Header
             set
             {
                 if (value <= 0)
-                    throw new ArgumentOutOfRangeException("value", value, "The current entity linetype scale must be greater than zero.");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The current entity line type scale must be greater than zero.");
                 this.variables[HeaderVariableCode.CeLtScale].Value = value;
             }
         }
 
         /// <summary>
-        /// Current entity lineweight.
+        /// Current entity line weight.
         /// </summary>
         /// <remarks>Default value: -1 (ByLayer).</remarks>
         public Lineweight CeLweight
         {
             get { return (Lineweight) this.variables[HeaderVariableCode.CeLweight].Value; }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException("value", "The current entity lineweight cannot be null.");
-                this.variables[HeaderVariableCode.CeLweight].Value = value;
-            }
+            set { this.variables[HeaderVariableCode.CeLweight].Value = value; }
         }
 
         /// <summary>
-        /// Current entity linetype name.
+        /// Current entity line type name.
         /// </summary>
         /// <remarks>Default value: ByLayer.</remarks>
         public string CeLtype
@@ -233,7 +229,7 @@ namespace netDxf.Header
             set
             {
                 if (string.IsNullOrEmpty(value))
-                    throw new ArgumentNullException("value", "The current entity linetype name cannot be null or empty.");
+                    throw new ArgumentNullException(nameof(value), "The current entity line type name should be at least one character long.");
                 this.variables[HeaderVariableCode.CeLtype].Value = value;
             }
         }
@@ -248,7 +244,7 @@ namespace netDxf.Header
             set
             {
                 if (string.IsNullOrEmpty(value))
-                    throw new ArgumentNullException("value", "The current layer name cannot be null or empty.");
+                    throw new ArgumentNullException(nameof(value), "The current layer name should be at least one character long.");
                 this.variables[HeaderVariableCode.CLayer].Value = value;
             }
         }
@@ -259,7 +255,7 @@ namespace netDxf.Header
         /// <remarks>Default value: 0 (Top).</remarks>
         public MLineJustification CMLJust
         {
-            get { return (MLineJustification)this.variables[HeaderVariableCode.CMLJust].Value; }
+            get { return (MLineJustification) this.variables[HeaderVariableCode.CMLJust].Value; }
             set { this.variables[HeaderVariableCode.CMLJust].Value = value; }
         }
 
@@ -283,7 +279,7 @@ namespace netDxf.Header
             set
             {
                 if (string.IsNullOrEmpty(value))
-                    throw new ArgumentNullException("value", "The current multiline style name cannot be null or empty.");
+                    throw new ArgumentNullException(nameof(value), "The current multiline style name should be at least one character long.");
                 this.variables[HeaderVariableCode.CMLStyle].Value = value;
             }
         }
@@ -298,7 +294,7 @@ namespace netDxf.Header
             set
             {
                 if (string.IsNullOrEmpty(value))
-                    throw new ArgumentNullException("value", "The current dimesion style name cannot be null or empty.");
+                    throw new ArgumentNullException(nameof(value), "The current dimension style name should be at least one character long.");
                 this.variables[HeaderVariableCode.DimStyle].Value = value;
             }
         }
@@ -313,7 +309,7 @@ namespace netDxf.Header
             set
             {
                 if (value <= 0)
-                    throw new ArgumentOutOfRangeException("value", value, "The default text height must be greater than zero.");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The default text height must be greater than zero.");
                 this.variables[HeaderVariableCode.TextSize].Value = value;
             }
         }
@@ -328,7 +324,7 @@ namespace netDxf.Header
             set
             {
                 if (string.IsNullOrEmpty(value))
-                    throw new ArgumentNullException("value", "The current text style name cannot be null or empty.");
+                    throw new ArgumentNullException(nameof(value), "The current text style name should be at least one character long.");
                 this.variables[HeaderVariableCode.TextStyle].Value = value;
             }
         }
@@ -342,7 +338,7 @@ namespace netDxf.Header
         /// </remarks>
         public LinearUnitType LUnits
         {
-            get { return (LinearUnitType)this.variables[HeaderVariableCode.LUnits].Value; }
+            get { return (LinearUnitType) this.variables[HeaderVariableCode.LUnits].Value; }
             set
             {
                 if (value == LinearUnitType.Architectural || value == LinearUnitType.Engineering)
@@ -357,11 +353,11 @@ namespace netDxf.Header
         /// <remarks>Valid values are integers from 0 to 8. Default value: 4.</remarks>
         public short LUprec
         {
-            get { return (short)this.variables[HeaderVariableCode.LUprec].Value; }
+            get { return (short) this.variables[HeaderVariableCode.LUprec].Value; }
             set
             {
                 if (value < 0 || value > 8)
-                    throw new ArgumentOutOfRangeException("value", "Valid values are integers from 0 to 8.");
+                    throw new ArgumentOutOfRangeException(nameof(value), "Valid values are integers from 0 to 8.");
                 this.variables[HeaderVariableCode.LUprec].Value = value;
             }
         }
@@ -396,7 +392,19 @@ namespace netDxf.Header
         }
 
         /// <summary>
-        /// Specifies a drawing units value for automatic scaling of blocks, images, or xrefs when inserted or attached to a drawing.
+        /// Insertion base point for the current drawing.
+        /// </summary>
+        /// <remarks>
+        /// When you insert or externally reference the current drawing into other drawings, this base point is used as the insertion base point.
+        /// </remarks>
+        public Vector3 InsBase
+        {
+            get { return (Vector3) this.variables[HeaderVariableCode.InsBase].Value; }
+            set { this.variables[HeaderVariableCode.InsBase].Value = value; }
+        }
+
+        /// <summary>
+        /// Specifies a drawing units value for automatic scaling of blocks, images, or xRefs when inserted or attached to a drawing.
         /// </summary>
         /// <remarks>
         /// Default value: Unitless.<br />
@@ -404,7 +412,7 @@ namespace netDxf.Header
         /// </remarks>
         public DrawingUnits InsUnits
         {
-            get { return (DrawingUnits)this.variables[HeaderVariableCode.InsUnits].Value; }
+            get { return (DrawingUnits) this.variables[HeaderVariableCode.InsUnits].Value; }
             set { this.variables[HeaderVariableCode.InsUnits].Value = value; }
         }
 
@@ -422,7 +430,7 @@ namespace netDxf.Header
         }
 
         /// <summary>
-        /// Global linetype scale.
+        /// Global line type scale.
         /// </summary>
         /// <remarks>Default value: 1.0.</remarks>
         public double LtScale
@@ -431,18 +439,18 @@ namespace netDxf.Header
             set
             {
                 if (value <= 0)
-                    throw new ArgumentOutOfRangeException("value", value, "The global linetype scale must be greater than zero.");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The global line type scale must be greater than zero.");
                 this.variables[HeaderVariableCode.LtScale].Value = value;
             }
         }
 
         /// <summary>
-        /// Controls the display of lineweights on the Model or Layout tab.
+        /// Controls the display of line weights on the Model or Layout tab.
         /// </summary>
         /// <remarks>
         /// Default value: false.<br />
-        /// false = Lineweight is not displayed.<br />
-        /// true = Lineweight is displayed.<br />
+        /// false = Line weight is not displayed.<br />
+        /// true = Line weight is displayed.<br />
         /// </remarks>
         public bool LwDisplay
         {
@@ -451,12 +459,21 @@ namespace netDxf.Header
         }
 
         /// <summary>
+        /// Controls if the text will be mirrored during a symmetry.
+        /// </summary>
+        public bool MirrText
+        {
+            get { return (bool) this.variables[HeaderVariableCode.MirrText].Value; }
+            set { this.variables[HeaderVariableCode.MirrText].Value = value; }
+        }
+
+        /// <summary>
         /// Controls the <see cref="PointShape">shape</see> to draw a point entity.
         /// </summary>
         /// <remarks>Default value: PointShape.Dot.</remarks>
         public PointShape PdMode
         {
-            get { return (PointShape)this.variables[HeaderVariableCode.PdMode].Value; }
+            get { return (PointShape) this.variables[HeaderVariableCode.PdMode].Value; }
             set { this.variables[HeaderVariableCode.PdMode].Value = value; }
         }
 
@@ -476,21 +493,40 @@ namespace netDxf.Header
         }
 
         /// <summary>
-        /// Governs the generation of linetype patterns around the vertices of a 2D polyline.
+        /// Governs the generation of line type patterns around the vertexes of a 2D polyline.
         /// </summary>
         /// <remarks>
         /// Default value: 0.<br />
-        /// 1 = Linetype is generated in a continuous pattern around vertices of the polyline.<br />
+        /// 1 = Line type is generated in a continuous pattern around vertexes of the polyline.<br />
         /// 0 = Each segment of the polyline starts and ends with a dash.
         /// </remarks>
         public short PLineGen
         {
-            get { return (short)this.variables[HeaderVariableCode.PLineGen].Value; }
+            get { return (short) this.variables[HeaderVariableCode.PLineGen].Value; }
             set
             {
                 if (value != 0 && value != 1)
-                    throw new ArgumentOutOfRangeException("value", value, "Accepted values are 0 or 1.");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted values are 0 or 1.");
                 this.variables[HeaderVariableCode.PLineGen].Value = value;
+            }
+        }
+
+        /// <summary>
+        /// Controls paper space line type scaling.
+        /// </summary>
+        /// <remarks>
+        /// Default value: 1.<br />
+        /// 1 = No special line type scaling.<br />
+        /// 0 = Viewport scaling governs line type scaling.
+        /// </remarks>
+        public short PsLtScale
+        {
+            get { return (short) this.variables[HeaderVariableCode.PsLtScale].Value; }
+            set
+            {
+                if (value != 0 && value != 1)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Accepted values are 0 or 1.");
+                this.variables[HeaderVariableCode.PsLtScale].Value = value;
             }
         }
 
@@ -500,7 +536,7 @@ namespace netDxf.Header
         /// <remarks>This date/time is local to the time zone where the file was created.</remarks>
         public DateTime TdCreate
         {
-            get { return (DateTime)this.variables[HeaderVariableCode.TdCreate].Value; }
+            get { return (DateTime) this.variables[HeaderVariableCode.TdCreate].Value; }
             set { this.variables[HeaderVariableCode.TdCreate].Value = value; }
         }
 
@@ -509,7 +545,7 @@ namespace netDxf.Header
         /// </summary>
         public DateTime TduCreate
         {
-            get { return (DateTime)this.variables[HeaderVariableCode.TduCreate].Value; }
+            get { return (DateTime) this.variables[HeaderVariableCode.TduCreate].Value; }
             set { this.variables[HeaderVariableCode.TduCreate].Value = value; }
         }
 
@@ -519,8 +555,8 @@ namespace netDxf.Header
         /// <remarks>This date/time is local to the time zone where the file was created.</remarks>
         public DateTime TdUpdate
         {
-            get { return (DateTime)this.variables[HeaderVariableCode.TdUpdate].Value; }
-            set { this.variables[HeaderVariableCode.TdUpdate].Value =value; }
+            get { return (DateTime) this.variables[HeaderVariableCode.TdUpdate].Value; }
+            set { this.variables[HeaderVariableCode.TdUpdate].Value = value; }
         }
 
         /// <summary>
@@ -528,7 +564,7 @@ namespace netDxf.Header
         /// </summary>
         public DateTime TduUpdate
         {
-            get { return (DateTime)this.variables[HeaderVariableCode.TduUpdate].Value; }
+            get { return (DateTime) this.variables[HeaderVariableCode.TduUpdate].Value; }
             set { this.variables[HeaderVariableCode.TduUpdate].Value = value; }
         }
 
@@ -537,33 +573,142 @@ namespace netDxf.Header
         /// </summary>
         public TimeSpan TdinDwg
         {
-            get { return (TimeSpan)this.variables[HeaderVariableCode.TdinDwg].Value; }
+            get { return (TimeSpan) this.variables[HeaderVariableCode.TdinDwg].Value; }
             set { this.variables[HeaderVariableCode.TdinDwg].Value = value; }
         }
 
-
-        public Vector3 ExtMin
+        /// <summary>
+        /// Origin of current UCS (in WCS).
+        /// </summary>
+        public Vector3 UcsOrg
         {
-            get { return (Vector3)this.variables[HeaderVariableCode.ExtMin].Value; }
-            set { this.variables[HeaderVariableCode.ExtMin].Value = value; }
+            get { return (Vector3)this.variables[HeaderVariableCode.UcsOrg].Value; }
+            set { this.variables[HeaderVariableCode.UcsOrg].Value = value; }
         }
 
-        public Vector3 ExtMax
+        /// <summary>
+        /// Direction of the current UCS X axis (in WCS).
+        /// </summary>
+        /// <remarks>
+        /// The vectors UcsXDir and UcsYDir must be perpendicular.
+        /// </remarks>
+        public Vector3 UcsXDir
         {
-            get { return (Vector3)this.variables[HeaderVariableCode.ExtMax].Value; }
-            set { this.variables[HeaderVariableCode.ExtMax].Value = value; }
+            get { return (Vector3)this.variables[HeaderVariableCode.UcsXDir].Value; }
+            set { this.variables[HeaderVariableCode.UcsXDir].Value = value; }
+        }
+
+        /// <summary>
+        /// Direction of the current UCS Y axis (in WCS).
+        /// </summary>
+        /// <remarks>
+        /// The vectors UcsXDir and UcsYDir must be perpendicular.
+        /// </remarks>
+        public Vector3 UcsYDir
+        {
+            get { return (Vector3)this.variables[HeaderVariableCode.UcsYDir].Value; }
+            set { this.variables[HeaderVariableCode.UcsYDir].Value = value; }
         }
 
         #endregion
 
-        #region internal properties
+        #region public methods
 
         /// <summary>
-        /// Gets the collection of header variables.
+        /// Gets a collection of the known header variables.
         /// </summary>
-        internal ICollection<HeaderVariable> Values
+        /// <returns>A list with the known header variables.</returns>
+        public List<HeaderVariable> KnownValues()
         {
-            get { return this.variables.Values; }
+            return new List<HeaderVariable>(this.variables.Values);
+        }
+
+        /// <summary>
+        /// Gets a collection of the known header variables names.
+        /// </summary>
+        /// <returns>A list with the known header variables names.</returns>
+        public List<string> KnownNames()
+        {
+            return new List<string>(this.variables.Keys);
+        }
+
+        /// <summary>
+        /// Gets a collection of the custom header variables.
+        /// </summary>
+        /// <returns>A list with the custom header variables.</returns>
+        public List<HeaderVariable> CustomValues()
+        {
+            return new List<HeaderVariable>(this.customVariables.Values);
+        }
+
+        /// <summary>
+        /// Gets a collection of the custom header variables names.
+        /// </summary>
+        /// <returns>A list with the custom header variables names.</returns>
+        public List<string> CustomNames()
+        {
+            return new List<string>(this.customVariables.Keys);
+        }
+
+        /// <summary>
+        /// Adds a custom <see cref="HeaderVariable">HeaderVariable</see> to the list.
+        /// </summary>
+        /// <param name="variable">Header variable to add to the list.</param>
+        /// <remarks>
+        /// All header variable names must start with the character '$'.<br />
+        /// Header variable names that already exists in the known list cannot be added.
+        /// </remarks>
+        public void AddCustomVariable(HeaderVariable variable)
+        {
+            if(variable == null)
+                throw new ArgumentNullException(nameof(variable), "A custom header variable cannot be null.");
+
+            if(!variable.Name.StartsWith("$"))
+                throw new ArgumentException("A header variable name must start with '$'.", nameof(variable));
+
+            if(this.variables.ContainsKey(variable.Name))
+                throw new ArgumentException("A known header variable with the same name already exists.", nameof(variable));
+
+            this.customVariables.Add(variable.Name, variable);
+        }
+
+        /// <summary>
+        /// Checks if a custom <see cref="HeaderVariable">HeaderVariable</see> name exits in the list.
+        /// </summary>
+        /// <param name="name">Header variable name.</param>
+        /// <returns>True if a header variable name exits in the list; otherwise, false.</returns>
+        /// <remarks>The header variable name is case insensitive.</remarks>
+        public bool ContainsCustomVariable(string name)
+        {
+            return this.customVariables.ContainsKey(name);
+        }
+
+        /// <summary>Gets the header variable associated with the specified name.</summary>
+        /// <param name="name">The name of the header variable to get.</param>
+        /// <param name="variable">When this method returns, contains the header variable associated with the specified name, if the name is found; otherwise, it contains null.</param>
+        /// <returns>True if the list contains a header variable with the specified name; otherwise, false.</returns>
+        public bool TryGetCustomVariable(string name, out HeaderVariable variable)
+        {
+            return this.customVariables.TryGetValue(name, out variable);
+        }
+
+        /// <summary>
+        /// Removes a custom <see cref="HeaderVariable">HeaderVariable</see> from the list.
+        /// </summary>
+        /// <param name="name">Header variable to add to the list.</param>
+        /// <returns>True if the element is successfully found and removed; otherwise, false.</returns>
+        /// <remarks>The header variable name is case insensitive.</remarks>
+        public bool RemoveCustomVariable(string name)
+        {
+            return this.customVariables.Remove(name);
+        }
+
+        /// <summary>
+        /// Removes all custom <see cref="HeaderVariable">HeaderVariable</see> from the list.
+        /// </summary>
+        public void ClearCustomVariables()
+        {
+            this.customVariables.Clear();
         }
 
         #endregion

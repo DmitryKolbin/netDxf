@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2013 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,11 +16,10 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
-using System;
 using System.Collections.Generic;
 
 namespace netDxf.Entities
@@ -30,10 +29,9 @@ namespace netDxf.Entities
     /// </summary>
     public class MLineVertex
     {
-
         #region private fields
 
-        private Vector2 location;
+        private Vector2 position;
         private readonly Vector2 direction;
         private readonly Vector2 miter;
         private readonly List<double>[] distances;
@@ -44,7 +42,7 @@ namespace netDxf.Entities
 
         internal MLineVertex(Vector2 location, Vector2 direction, Vector2 miter, List<double>[] distances)
         {
-            this.location = location;
+            this.position = location;
             this.direction = direction;
             this.miter = miter;
             this.distances = distances;
@@ -58,12 +56,12 @@ namespace netDxf.Entities
         /// Gets the MLine vertex position.
         /// </summary>
         /// <remarks>
-        /// If this property is modified the function MLine.CalculateVertexesInfo() will need to be called manually to upadate the internal information.
+        /// If this property is modified the function MLine.CalculateVertexesInfo() will need to be called manually to update the internal information.
         /// </remarks>
-        public Vector2 Location
+        public Vector2 Position
         {
-            get { return location; }
-            set { location = value; }
+            get { return this.position; }
+            set { this.position = value; }
         }
 
         /// <summary>
@@ -71,7 +69,7 @@ namespace netDxf.Entities
         /// </summary>
         public Vector2 Direction
         {
-            get { return direction; }
+            get { return this.direction; }
         }
 
         /// <summary>
@@ -79,7 +77,7 @@ namespace netDxf.Entities
         /// </summary>
         public Vector2 Miter
         {
-            get { return miter; }
+            get { return this.miter; }
         }
 
         /// <summary>
@@ -88,19 +86,19 @@ namespace netDxf.Entities
         /// <remarks>
         /// <para>
         /// There is a list for every MLineStyle element, and every list contains an array of real values
-        /// that parameterize the start and end point of every element of the style.
+        /// that parametrize the start and end point of every element of the style.
         /// </para>
         /// <para>
         /// The first value (index 0) represents the distance from the segment vertex along the miter vector to the
         /// point where the line element's path intersects the miter vector.<br />
         /// The second value (index 1) is the distance along the line element's direction from the point,
         /// defined by the first value, to the actual start of the line element.<br />
-        /// The successive values list the start and stop points of the line element breaks or cuts in this segment of the mline.
+        /// The successive values list the start and stop points of the line element breaks or cuts in this segment of the multiline.
         /// </para>
         /// </remarks>
         public List<double>[] Distances
         {
-            get { return distances; }
+            get { return this.distances; }
         }
 
         #endregion
@@ -113,7 +111,7 @@ namespace netDxf.Entities
         /// <returns>The string representation.</returns>
         public override string ToString()
         {
-            return String.Format("{0}: ({1})", "MLineVertex", this.location);
+            return string.Format("{0}: ({1})", "MLineVertex", this.position);
         }
 
         /// <summary>
@@ -123,12 +121,12 @@ namespace netDxf.Entities
         public object Clone()
         {
             List<double>[] copyDistances = new List<double>[this.distances.Length];
-            for (int j = 0; j < this.distances.Length; j++)
+            for (int i = 0; i < this.distances.Length; i++)
             {
-                copyDistances[j] = new List<double>();
-                copyDistances[j].AddRange(this.distances[j]);
+                copyDistances[i] = new List<double>();
+                copyDistances[i].AddRange(this.distances[i]);
             }
-            return new MLineVertex(this.location, this.direction, this.miter, copyDistances);
+            return new MLineVertex(this.position, this.direction, this.miter, copyDistances);
         }
 
         #endregion

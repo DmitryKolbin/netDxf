@@ -1,7 +1,7 @@
-#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+#region netDxf library, Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,30 +16,33 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
+
+using System;
+using System.Globalization;
 
 namespace netDxf
 {
     /// <summary>
     /// Represents an entry in the extended data of an entity.
     /// </summary>
-    public struct XDataRecord
+    public class XDataRecord
     {
         #region private fields
 
-        private object value;
-        private short code;
+        private readonly XDataCode code;
+        private readonly object value;
 
         #endregion
 
         #region constants
 
         /// <summary>
-        /// An extended data control string can be either “{”or “}”.
+        /// An extended data control string can be either "{"or "}".
         /// These braces enable applications to organize their data by subdividing the data into lists.
-        /// The left brace begins a list, and the right brace terminates the most recent list. Lists can be nested
+        /// The left brace begins a list, and the right brace terminates the most recent list. Lists can be nested.
         /// </summary>
         public static XDataRecord OpenControlString
         {
@@ -49,7 +52,7 @@ namespace netDxf
         /// <summary>
         /// An extended data control string can be either "{" or "}".
         /// These braces enable applications to organize their data by subdividing the data into lists.
-        /// The left brace begins a list, and the right brace terminates the most recent list. Lists can be nested
+        /// The left brace begins a list, and the right brace terminates the most recent list. Lists can be nested.
         /// </summary>
         public static XDataRecord CloseControlString
         {
@@ -65,8 +68,66 @@ namespace netDxf
         /// </summary>
         /// <param name="code">XData code.</param>
         /// <param name="value">XData value.</param>
-        public XDataRecord(short code, object value)
+        public XDataRecord(XDataCode code, object value)
         {
+            if(value == null)
+                throw new ArgumentNullException(nameof(value));
+
+            switch (code)
+            {
+                case XDataCode.AppReg:
+                    throw new ArgumentException("An application registry cannot be an extended data record.", nameof(value));
+                case XDataCode.BinaryData:
+                    if (!(value is byte[]))
+                        throw new ArgumentException("The value of a XDataCode.BinaryData must be a byte array.", nameof(value));
+                    break;
+                case XDataCode.ControlString:
+                    string v = value as string;
+                    if (string.IsNullOrEmpty(v))
+                        throw new ArgumentException("The value of a XDataCode.ControlString must be a string.", nameof(value));
+                    if (!string.Equals(v, "{") && !string.Equals(v, "}"))
+                        throw new ArgumentException("The only valid values of a XDataCode.ControlString are { or }.", nameof(value));
+                    break;
+                case XDataCode.DatabaseHandle:
+                    if (!(value is string))
+                        throw new ArgumentException("The value of a XDataCode.DatabaseHandle must be an hexadecimal number.", nameof(value));
+                    long test;
+                    if (!long.TryParse((string) value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out test))
+                        throw new ArgumentException("The value of a XDataCode.DatabaseHandle must be an hexadecimal number.", nameof(value));
+                    value = test.ToString("X");
+                    break;
+                case XDataCode.Distance:
+                case XDataCode.Real:
+                case XDataCode.RealX:
+                case XDataCode.RealY:
+                case XDataCode.RealZ:
+                case XDataCode.WorldSpacePositionX:
+                case XDataCode.WorldSpacePositionY:
+                case XDataCode.WorldSpacePositionZ:
+                case XDataCode.ScaleFactor:
+                case XDataCode.WorldDirectionX:
+                case XDataCode.WorldDirectionY:
+                case XDataCode.WorldDirectionZ:
+                case XDataCode.WorldSpaceDisplacementX:
+                case XDataCode.WorldSpaceDisplacementY:
+                case XDataCode.WorldSpaceDisplacementZ:
+                    if (!(value is double))
+                        throw new ArgumentException(string.Format("The value of a XDataCode.{0} must be a {1}.", code, typeof (double)), nameof(value));
+                    break;
+                case XDataCode.Int16:
+                    if (!(value is short))
+                        throw new ArgumentException(string.Format("The value of a XDataCode.{0} must be a {1}.", code, typeof (short)), nameof(value));
+                    break;
+                case XDataCode.Int32:
+                    if (!(value is int))
+                        throw new ArgumentException(string.Format("The value of a XDataCode.{0} must be an {1}.", code, typeof (int)), nameof(value));
+                    break;
+                case XDataCode.LayerName:
+                case XDataCode.String:
+                    if (!(value is string))
+                        throw new ArgumentException(string.Format("The value of a XDataCode.{0} must be a {1}.", code, typeof (string)), nameof(value));
+                    break;
+            }
             this.code = code;
             this.value = value;
         }
@@ -79,10 +140,9 @@ namespace netDxf
         /// Gets or set the XData code.
         /// </summary>
         /// <remarks>The only valid values are the ones defined in the <see cref="XDataCode">XDataCode</see> class.</remarks>
-        public short Code
+        public XDataCode Code
         {
             get { return this.code; }
-            set { this.code = value; }
         }
 
         /// <summary>
@@ -91,7 +151,6 @@ namespace netDxf
         public object Value
         {
             get { return this.value; }
-            set { this.value = value; }
         }
 
         #endregion
@@ -108,6 +167,5 @@ namespace netDxf
         }
 
         #endregion
-
     }
 }

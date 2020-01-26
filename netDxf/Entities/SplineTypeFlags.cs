@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2012 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2012 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -60,23 +60,21 @@ namespace netDxf.Entities
         /// Linear (planar bit is also set).
         /// </summary>
         Linear = 16,
-
         // in AutoCAD 2012 the flags can be greater than 70 despite the information that shows the dxf documentation these values are just a guess.
         FitChord = 32,
         FitSqrtChord = 64,
         FitUniform = 128,
-
-        Unknown1 = 256,
+        FitCustom = 256,
         Unknown2 = 512,
+
         /// <summary>
         /// Used by splines created by fit points.
         /// </summary>
-        Unknown3 = 1024,
+        FitPointCreationMethod = 1024,
+
         /// <summary>
         /// Used for closed periodic splines.
         /// </summary>
-        Unknown4 = 2048
-
-
+        ClosedPeriodicSpline = 2048
     }
 }

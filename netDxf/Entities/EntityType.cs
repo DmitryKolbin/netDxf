@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -28,24 +28,9 @@ namespace netDxf.Entities
     public enum EntityType
     {
         /// <summary>
-        /// Line entity.
+        /// Arc entity.
         /// </summary>
-        Line,
-
-        /// <summary>
-        /// 3d polyline entity.
-        /// </summary>
-        Polyline,
-
-        /// <summary>
-        /// Lightweight polyline entity.
-        /// </summary>
-        LightWeightPolyline,
-
-        /// <summary>
-        /// Polyface mesh entity.
-        /// </summary>
-        PolyfaceMesh,
+        Arc,
 
         /// <summary>
         /// Circle entity.
@@ -53,24 +38,49 @@ namespace netDxf.Entities
         Circle,
 
         /// <summary>
+        /// Dimension entity.
+        /// </summary>
+        Dimension,
+
+        /// <summary>
         /// Ellipse entity.
         /// </summary>
         Ellipse,
 
         /// <summary>
-        /// Point entity.
+        /// 3d face entity.
         /// </summary>
-        Point,
+        Face3D,
 
         /// <summary>
-        /// Arc entity.
+        /// Hatch entity.
         /// </summary>
-        Arc,
+        Hatch,
 
         /// <summary>
-        /// Text string entity.
+        /// A raster image entity.
         /// </summary>
-        Text,
+        Image,
+
+        /// <summary>
+        /// Block insertion entity.
+        /// </summary>
+        Insert,
+
+        /// <summary>
+        /// Leader entity.
+        /// </summary>
+        Leader,
+
+        /// <summary>
+        /// LwPolyline entity, aka lightweight polyline.
+        /// </summary>
+        LwPolyline,
+
+        /// <summary>
+        /// Line entity.
+        /// </summary>
+        Line,
 
         /// <summary>
         /// Mesh entity.
@@ -78,19 +88,39 @@ namespace netDxf.Entities
         Mesh,
 
         /// <summary>
-        /// Multiline text string entity.
-        /// </summary>
-        MText,
-
-        /// <summary>
         /// Multiline entity.
         /// </summary>
         MLine,
 
         /// <summary>
-        /// 3d face entity.
+        /// Multiline text string entity.
         /// </summary>
-        Face3D,
+        MText,
+
+        /// <summary>
+        /// Point entity.
+        /// </summary>
+        Point,
+
+        /// <summary>
+        /// Polyface mesh entity.
+        /// </summary>
+        PolyfaceMesh,
+
+        /// <summary>
+        /// 3d polyline entity.
+        /// </summary>
+        Polyline,
+
+        /// <summary>
+        /// Ray entity.
+        /// </summary>
+        Ray,
+
+        /// <summary>
+        /// Shape entity.
+        /// </summary>
+        Shape,
 
         /// <summary>
         /// Solid entity.
@@ -103,53 +133,38 @@ namespace netDxf.Entities
         Spline,
 
         /// <summary>
-        /// Helix entity.
+        /// Text string entity.
         /// </summary>
-        Helix,
+        Text,
 
         /// <summary>
-        /// Block insertion entity.
+        /// Tolerance entity.
         /// </summary>
-        Insert,
+        Tolerance,
 
         /// <summary>
-        /// Hatch entity.
+        /// Trace entity.
         /// </summary>
-        Hatch,
+        Trace,
 
         /// <summary>
-        /// Attribute entity.
+        /// Underlay entity.
         /// </summary>
-        Attribute,
+        Underlay,
 
         /// <summary>
-        /// Attribute definition entity.
+        /// Viewport entity.
         /// </summary>
-        AttributeDefinition,
+        Viewport,
 
         /// <summary>
-        /// Dimension entity.
+        /// Wipeout entity.
         /// </summary>
-        Dimension,
-
-        /// <summary>
-        /// A raster image entity.
-        /// </summary>
-        Image,
-
-        /// <summary>
-        /// Ray entity.
-        /// </summary>
-        Ray,
+        Wipeout,
 
         /// <summary>
         /// XLine entity.
         /// </summary>
-        XLine,
-
-        /// <summary>
-        /// Vieport entity.
-        /// </summary>
-        Viewport
+        XLine
     }
 }

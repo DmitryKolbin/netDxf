@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2013 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,9 +16,11 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
+
+using netDxf.Tables;
 
 namespace netDxf.Entities
 {
@@ -61,7 +63,7 @@ namespace netDxf.Entities
         /// </summary>
         /// <param name="startPoint">Line start <see cref="Vector3">point.</see></param>
         /// <param name="endPoint">Line end <see cref="Vector3">point.</see></param>
-        public Line(Vector3 startPoint, Vector3 endPoint) 
+        public Line(Vector3 startPoint, Vector3 endPoint)
             : base(EntityType.Line, DxfObjectCode.Line)
         {
             this.start = startPoint;
@@ -74,7 +76,7 @@ namespace netDxf.Entities
         #region public properties
 
         /// <summary>
-        /// Gets or sets the line <see cref="netDxf.Vector3">start point</see>.
+        /// Gets or sets the line <see cref="Vector3">start point</see>.
         /// </summary>
         public Vector3 StartPoint
         {
@@ -83,7 +85,7 @@ namespace netDxf.Entities
         }
 
         /// <summary>
-        /// Gets or sets the line <see cref="netDxf.Vector3">end point</see>.
+        /// Gets or sets the line <see cref="Vector3">end point</see>.
         /// </summary>
         public Vector3 EndPoint
         {
@@ -92,12 +94,34 @@ namespace netDxf.Entities
         }
 
         /// <summary>
+        /// Gets the direction of the line.
+        /// </summary>
+        public Vector3 Direction
+        {
+            get { return this.end - this.start; }
+        }
+
+        /// <summary>
         /// Gets or sets the line thickness.
         /// </summary>
         public double Thickness
         {
-            get { return this.thickness ; }
+            get { return this.thickness; }
             set { this.thickness = value; }
+        }
+
+        #endregion
+
+        #region public properties
+
+        /// <summary>
+        /// Switch the line direction.
+        /// </summary>
+        public void Reverse()
+        {
+            Vector3 tmp = this.start;
+            this.start = this.end;
+            this.end = tmp;
         }
 
         #endregion
@@ -105,29 +129,50 @@ namespace netDxf.Entities
         #region overrides
 
         /// <summary>
+        /// Moves, scales, and/or rotates the current entity given a 3x3 transformation matrix and a translation vector.
+        /// </summary>
+        /// <param name="transformation">Transformation matrix.</param>
+        /// <param name="translation">Translation vector.</param>
+        /// <remarks>Matrix3 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
+        public override void TransformBy(Matrix3 transformation, Vector3 translation)
+        {
+            Vector3 newNormal = transformation * this.Normal;
+            if (Vector3.Equals(Vector3.Zero, newNormal)) newNormal = this.Normal;
+
+            this.StartPoint = transformation * this.StartPoint + translation;
+            this.EndPoint = transformation * this.EndPoint + translation;
+            this.Normal = newNormal;
+        }
+
+        /// <summary>
         /// Creates a new Line that is a copy of the current instance.
         /// </summary>
         /// <returns>A new Line that is a copy of this instance.</returns>
         public override object Clone()
         {
-            return new Line
+            Line entity = new Line
             {
                 //EntityObject properties
-                Color = this.color,
-                Layer = this.layer,
-                LineType = this.lineType,
-                Lineweight = this.lineweight,
-                LineTypeScale = this.lineTypeScale,
-                Normal = this.normal,
-                XData = this.xData,
+                Layer = (Layer) this.Layer.Clone(),
+                Linetype = (Linetype) this.Linetype.Clone(),
+                Color = (AciColor) this.Color.Clone(),
+                Lineweight = this.Lineweight,
+                Transparency = (Transparency) this.Transparency.Clone(),
+                LinetypeScale = this.LinetypeScale,
+                Normal = this.Normal,
+                IsVisible = this.IsVisible,
                 //Line properties
                 StartPoint = this.start,
                 EndPoint = this.end,
-                Thickness = this.thickness,
+                Thickness = this.thickness
             };
+
+            foreach (XData data in this.XData.Values)
+                entity.XData.Add((XData) data.Clone());
+
+            return entity;
         }
 
         #endregion
-
     }
 }

@@ -1,119 +1,58 @@
-// Original source code
-// http://www.codeproject.com/KB/cs/stringenum.aspx
-// CodeBureau - Matt Simner
+#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
+
+//                        netDxf library
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
+// 
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+#endregion
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace netDxf
 {
-    #region Class StringEnum
-
     /// <summary>
     /// Helper class for working with 'extended' enums using <see cref="StringValueAttribute"/> attributes.
     /// </summary>
-    public class StringEnum
+    public class StringEnum<T> // TODO: when upgrading to C# 7.3 add constrain System.Enum, the check if T is an Enum will not be necessary
     {
-        #region Instance implementation
+        #region private fields
 
         private readonly Type enumType;
-        private static readonly Hashtable stringValues = new Hashtable();
+
+        #endregion
+
+        #region constructors
 
         /// <summary>
-        /// Creates a new <see cref="StringEnum"/> instance.
+        /// Creates a new <see cref="StringEnum{T}"/> instance.
         /// </summary>
-        /// <param name="enumType">Enum type.</param>
-        public StringEnum(Type enumType)
+        public StringEnum()
         {
-            if (!enumType.IsEnum)
-                throw new ArgumentException(String.Format("Supplied type must be an Enum.  Type was {0}", enumType));
-
-            this.enumType = enumType;
+            this.enumType = typeof(T);
+            if(!this.enumType.IsEnum)
+                throw new ArgumentException("T must be an Enum", nameof(T));
         }
 
-        /// <summary>
-        /// Gets the string value associated with the given enum value.
-        /// </summary>
-        /// <param name="valueName">Name of the enum value.</param>
-        /// <returns>String Value</returns>
-        public string GetStringValue(string valueName)
-        {
-            string stringValue;
-            try
-            {
-               Enum type = (Enum) Enum.Parse(this.enumType, valueName);
-                stringValue = GetStringValue(type);
-            }
-            catch
-            {
-                return null;
-            } //Swallow!
+        #endregion
 
-            return stringValue;
-        }
-
-        /// <summary>
-        /// Gets the string values associated with the enum.
-        /// </summary>
-        /// <returns>String value array</returns>
-        public Array GetStringValues()
-        {
-            ArrayList values = new ArrayList();
-            //Look for our string value associated with fields in this enum
-            foreach (FieldInfo fi in this.enumType.GetFields())
-            {
-                //Check for our custom attribute
-                StringValueAttribute[] attrs = fi.GetCustomAttributes(typeof (StringValueAttribute), false) as StringValueAttribute[];
-                if (attrs != null)
-                    if (attrs.Length > 0)
-                        values.Add(attrs[0].Value);
-            }
-
-            return values.ToArray();
-        }
-
-        /// <summary>
-        /// Gets the values as a 'bindable' list datasource.
-        /// </summary>
-        /// <returns>IList for data binding</returns>
-        public IList GetListValues()
-        {
-            Type underlyingType = Enum.GetUnderlyingType(this.enumType);
-            ArrayList values = new ArrayList();
-            //Look for our string value associated with fields in this enum
-            foreach (FieldInfo fi in this.enumType.GetFields())
-            {
-                //Check for our custom attribute
-                StringValueAttribute[] attrs = fi.GetCustomAttributes(typeof (StringValueAttribute), false) as StringValueAttribute[];
-                if (attrs != null)
-                    if (attrs.Length > 0)
-                        values.Add(new DictionaryEntry(Convert.ChangeType(Enum.Parse(this.enumType, fi.Name), underlyingType), attrs[0].Value));
-            }
-
-            return values;
-        }
-
-        /// <summary>
-        /// Return the existence of the given string value within the enum.
-        /// </summary>
-        /// <param name="stringValue">String value.</param>
-        /// <returns>Existence of the string value</returns>
-        public bool IsStringDefined(string stringValue)
-        {
-            return Parse(this.enumType, stringValue) != null;
-        }
-
-        /// <summary>
-        /// Return the existence of the given string value within the enum.
-        /// </summary>
-        /// <param name="stringValue">String value.</param>
-        /// <param name="ignoreCase">Denotes whether to conduct a case-insensitive match on the supplied string value</param>
-        /// <returns>Existence of the string value</returns>
-        public bool IsStringDefined(string stringValue, bool ignoreCase)
-        {
-            return Parse(this.enumType, stringValue, ignoreCase) != null;
-        }
+        #region public properties
 
         /// <summary>
         /// Gets the underlying enum type for this instance.
@@ -126,17 +65,91 @@ namespace netDxf
 
         #endregion
 
-        #region Static implementation
+        #region public methods
+
+        /// <summary>
+        /// Gets the string values associated with the enum.
+        /// </summary>
+        /// <returns>String value array</returns>
+        public List<string> GetStringValues()
+        {
+            List<string> values = new List<string>();
+            //Look for our string value associated with fields in this enum
+            foreach (FieldInfo fi in this.enumType.GetFields())
+            {
+                //Check for our custom attribute
+                StringValueAttribute[] attrs = fi.GetCustomAttributes(typeof (StringValueAttribute), false) as StringValueAttribute[];
+                if (attrs == null) continue;
+                if (attrs.Length > 0) values.Add(attrs[0].Value);
+            }
+
+            return values;
+        }
+
+        /// <summary>
+        /// Gets the enum entry and string value pairs.
+        /// </summary>
+        /// <returns>A dictionary containing each enum entry with its corresponding string value.</returns>
+        public Dictionary<T, string> GetValues()
+        {
+            Dictionary<T, string> values = new Dictionary<T, string>();
+            //Look for our string value associated with fields in this enum
+            foreach (FieldInfo fi in this.enumType.GetFields())
+            {
+                //Check for our custom attribute
+                StringValueAttribute[] attrs = fi.GetCustomAttributes(typeof (StringValueAttribute), false) as StringValueAttribute[];
+                if (attrs == null) continue;
+                if (attrs.Length > 0)
+                {
+                    object str = Enum.Parse(this.enumType, fi.Name);
+                    values.Add((T) str, attrs[0].Value);
+                }
+            }
+
+            return values;
+        }
+
+        #endregion
+        
+        #region static methods
+
+        /// <summary>
+        /// Return the existence of the given string value within the enum.
+        /// </summary>
+        /// <param name="value">String value.</param>
+        /// <returns>Existence of the string value</returns>
+        public static bool IsStringDefined(string value)
+        {
+            return IsStringDefined(value, StringComparison.CurrentCulture);
+        }
+
+        /// <summary>
+        /// Return the existence of the given string value within the enum.
+        /// </summary>
+        /// <param name="value">String value.</param>
+        /// <param name="comparisonType">Specifies how to conduct a case-insensitive match on the supplied string value</param>
+        /// <returns>Existence of the string value</returns>
+        public static bool IsStringDefined(string value, StringComparison comparisonType)
+        {
+            List<string> values = new StringEnum<T>().GetStringValues();
+            foreach (string s in values)
+            {
+                if (s.Equals(value, comparisonType)) return true;
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Gets a string value for a particular enum value.
         /// </summary>
         /// <param name="value">Value.</param>
         /// <returns>String Value associated via a <see cref="StringValueAttribute"/> attribute, or null if not found.</returns>
-        public static string GetStringValue(Enum value)
+        public static string GetStringValue(T value)
         {
             string output = null;
             Type type = value.GetType();
+            Hashtable stringValues = new Hashtable();
 
             if (stringValues.ContainsKey(value))
                 output = ((StringValueAttribute) stringValues[value]).Value;
@@ -156,30 +169,32 @@ namespace netDxf
         }
 
         /// <summary>
-        /// Parses the supplied enum and string value to find an associated enum value (case sensitive).
+        /// Parses the supplied enum and string value to find an associated enum value.
         /// </summary>
-        /// <param name="type">Type.</param>
-        /// <param name="stringValue">String value.</param>
-        /// <returns>Enum value associated with the string value, or null if not found.</returns>
-        public static object Parse(Type type, string stringValue)
+        /// <param name="value">String value.</param>
+        /// <returns>Enum value associated with the string value, if not found the default enum will be returned.</returns>
+        public static T Parse(string value)
         {
-            return Parse(type, stringValue, false);
+            return Parse(value, StringComparison.CurrentCulture);
         }
 
         /// <summary>
         /// Parses the supplied enum and string value to find an associated enum value.
         /// </summary>
-        /// <param name="type">Type.</param>
-        /// <param name="stringValue">String value.</param>
-        /// <param name="ignoreCase">Denotes whether to conduct a case-insensitive match on the supplied string value</param>
-        /// <returns>Enum value associated with the string value, or null if not found.</returns>
-        public static object Parse(Type type, string stringValue, bool ignoreCase)
+        /// <param name="value">String value.</param>
+        /// <param name="comparisonType">Specifies how to conduct a case-insensitive match on the supplied string value.</param>
+        /// <returns>Enum value associated with the string value, if not found the default enum will be returned.</returns>
+        public static T Parse(string value, StringComparison comparisonType)
         {
-            object output = null;
+            Type type = typeof(T);
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            T output = default(T);
             string enumStringValue = null;
 
             if (!type.IsEnum)
-                throw new ArgumentException(String.Format("Supplied type must be an Enum.  Type was {0}", type));
+                throw new ArgumentException(string.Format("The supplied type \"{0}\" must be an Enum.", type));
 
             //Look for our string value associated with fields in this enum
             foreach (FieldInfo fi in type.GetFields())
@@ -191,9 +206,10 @@ namespace netDxf
                         enumStringValue = attrs[0].Value;
 
                 //Check for equality then select actual enum value.
-                if (string.Compare(enumStringValue, stringValue, ignoreCase) == 0)
+                if (string.Compare(enumStringValue, value, comparisonType) == 0)
                 {
-                    output = Enum.Parse(type, fi.Name);
+                    if (Enum.IsDefined(type, fi.Name))
+                        output = (T) Enum.Parse(type, fi.Name);
                     break;
                 }
             }
@@ -201,40 +217,16 @@ namespace netDxf
             return output;
         }
 
-        /// <summary>
-        /// Return the existence of the given string value within the enum.
-        /// </summary>
-        /// <param name="stringValue">String value.</param>
-        /// <param name="enumType">Type of enum</param>
-        /// <returns>Existence of the string value</returns>
-        public static bool IsStringDefined(Type enumType, string stringValue)
-        {
-            return Parse(enumType, stringValue) != null;
-        }
-
-        /// <summary>
-        /// Return the existence of the given string value within the enum.
-        /// </summary>
-        /// <param name="stringValue">String value.</param>
-        /// <param name="enumType">Type of enum</param>
-        /// <param name="ignoreCase">Denotes whether to conduct a case-insensitive match on the supplied string value</param>
-        /// <returns>Existence of the string value</returns>
-        public static bool IsStringDefined(Type enumType, string stringValue, bool ignoreCase)
-        {
-            return Parse(enumType, stringValue, ignoreCase) != null;
-        }
-
         #endregion
     }
-
-    #endregion
 
     #region Class StringValueAttribute
 
     /// <summary>
     /// Simple attribute class for storing String Values
     /// </summary>
-    public class StringValueAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class StringValueAttribute : Attribute
     {
         private readonly string value;
 
@@ -250,7 +242,6 @@ namespace netDxf
         /// <summary>
         /// Gets the value.
         /// </summary>
-        /// <value></value>
         public string Value
         {
             get { return this.value; }

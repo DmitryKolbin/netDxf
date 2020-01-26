@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,12 +16,11 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 using System;
-using System.Collections.Generic;
 
 namespace netDxf.Header
 {
@@ -33,28 +32,33 @@ namespace netDxf.Header
         #region private fields
 
         private readonly string name;
-        private readonly short codeGroup;
-        private object value;
-
-        #endregion
-
-        #region constants
-
-        public static readonly Dictionary<string, int> Allowed = HeaderVariablesCodeGroup();
-        public static readonly List<string> AllowedExt = new List<string> { HeaderVariableCode.ExtMin, HeaderVariableCode.ExtMax };
+        private readonly short groupCode;
+        private object variable;
 
         #endregion
 
         #region constructors
 
-        public HeaderVariable(string name, object value)
+        /// <summary>
+        /// Initializes a new instance of the <c>HeaderVariable</c> class.
+        /// </summary>
+        /// <param name="name">Header variable name.</param>
+        /// <param name="groupCode">Header variable group code.</param>
+        /// <param name="value">Header variable value.</param>
+        /// <remarks>
+        /// It is very important to match the group code with its corresponding value type,
+        /// check the DXF documentation for details about what group code correspond to its associated type.
+        /// For example, typical groups codes are 70, 40, and 2 that correspond to short, double, and string value types, respectively.<br />
+        /// If the header value is a Vector3 use the group code 30, if it is a Vector2 use group code 20,
+        /// when the variable is written to the DXF the codes 10, 20, and 30 will be added as necessary.
+        /// </remarks>
+        public HeaderVariable(string name, short groupCode, object value)
         {
-            if (!Allowed.ContainsKey(name) && !AllowedExt.Contains(name))
-                throw new ArgumentOutOfRangeException("name", name, string.Format("Variable name {0} not defined.", name));
-            if (Allowed.ContainsKey(name))
-                this.codeGroup = (short)Allowed[name];
+            if(!name.StartsWith("$", StringComparison.InvariantCultureIgnoreCase))
+                throw new ArgumentException("Header variable names always starts with '$'", nameof(name));
             this.name = name;
-            this.value = value;
+            this.groupCode = groupCode;
+            this.variable = value;
         }
 
         #endregion
@@ -64,84 +68,49 @@ namespace netDxf.Header
         /// <summary>
         /// Gets the header variable name.
         /// </summary>
+        /// <remarks>The header variable name is case insensitive.</remarks>
         public string Name
         {
             get { return this.name; }
         }
 
         /// <summary>
-        /// Gets the header variable code group.
+        /// Gets the header variable group code.
         /// </summary>
-        public short CodeGroup
+        public short GroupCode
         {
-            get { return this.codeGroup; }
+            get { return this.groupCode; }
         }
 
         /// <summary>
         /// Gets the header variable stored value.
         /// </summary>
+        /// <remarks>
+        /// It is very important to match the group code with its corresponding value type,
+        /// check the DXF documentation for details about what group code correspond to its associated type.
+        /// For example, typical groups codes are 70, 40, and 2 that correspond to short, double, and string value types, respectively.<br />
+        /// If the header value is a Vector3 use the group code 30, if it is a Vector2 use group code 20,
+        /// when the variable is written to the DXF the codes 10, 20, and 30 will be added as necessary.
+        /// </remarks>
         public object Value
         {
-            get { return this.value; }
-            set { this.value = value; }
+            get { return this.variable; }
+            set { this.variable = value; }
         }
 
         #endregion
 
         #region overrides
 
+        /// <summary>
+        /// Obtains a string that represents the header variable.
+        /// </summary>
+        /// <returns>A string text.</returns>
         public override string ToString()
         {
-            return String.Format("{0}:{1}", this.name, this.value);
+            return string.Format("{0}:{1}", this.name, this.variable);
         }
 
         #endregion
-
-        #region private methods
-
-        private static Dictionary<string, int> HeaderVariablesCodeGroup()
-        {
-            return new Dictionary<string, int>
-                       {
-                           {HeaderVariableCode.AcadVer, 1},
-                           {HeaderVariableCode.HandleSeed, 5},
-                           {HeaderVariableCode.Angbase, 50},
-                           {HeaderVariableCode.Angdir, 70},
-                           {HeaderVariableCode.AttMode, 70},
-                           {HeaderVariableCode.AUnits, 70},
-                           {HeaderVariableCode.AUprec, 70},
-                           {HeaderVariableCode.LUnits, 70},
-                           {HeaderVariableCode.LUprec, 70},
-                           {HeaderVariableCode.CeColor, 62},
-                           {HeaderVariableCode.CeLtScale, 40},
-                           {HeaderVariableCode.CeLtype, 6},
-                           {HeaderVariableCode.CeLweight, 370},
-                           {HeaderVariableCode.CLayer, 8},
-                           {HeaderVariableCode.CMLJust, 70},
-                           {HeaderVariableCode.CMLScale, 40},
-                           {HeaderVariableCode.CMLStyle, 2},
-                           {HeaderVariableCode.DimStyle, 2},
-                           {HeaderVariableCode.TextSize, 40},
-                           {HeaderVariableCode.TextStyle, 7},
-                           {HeaderVariableCode.DwgCodePage, 3},
-                           {HeaderVariableCode.Extnames, 290},
-                           {HeaderVariableCode.InsUnits, 70},
-                           {HeaderVariableCode.LastSavedBy, 1},
-                           {HeaderVariableCode.LtScale, 40},
-                           {HeaderVariableCode.LwDisplay, 290},
-                           {HeaderVariableCode.PdMode, 70},
-                           {HeaderVariableCode.PdSize, 40},
-                           {HeaderVariableCode.PLineGen, 70},
-                           {HeaderVariableCode.TdCreate, 40},
-                           {HeaderVariableCode.TduCreate, 40},
-                           {HeaderVariableCode.TdUpdate, 40},
-                           {HeaderVariableCode.TduUpdate, 40},
-                           {HeaderVariableCode.TdinDwg, 40},
-
-                       };
-        }
-
-        #endregion
-
     }
 }

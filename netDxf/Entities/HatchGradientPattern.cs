@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -28,7 +28,7 @@ namespace netDxf.Entities
     /// Represents the hatch gradient pattern style.
     /// </summary>
     /// <remarks>
-    /// Grandient patterns are only supported by AutoCad2004 and higher dxf versions. It will default to a solid pattern if saved as AutoCad2000.
+    /// Gradient patterns are only supported by AutoCad2004 and higher DXF versions. It will default to a solid pattern if saved as AutoCad2000.
     /// </remarks>
     public class HatchGradientPattern :
         HatchPattern
@@ -49,8 +49,16 @@ namespace netDxf.Entities
         /// <summary>
         /// Initializes a new instance of the <c>HatchGradientPattern</c> class as a default linear gradient. 
         /// </summary>
-        /// <param name="description">Description of the pattern (optional, this information is not saved in the dxf file). By default it will use the supplied name.</param>
-        public HatchGradientPattern(string description = null)
+        public HatchGradientPattern()
+            : this(string.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <c>HatchGradientPattern</c> class as a default linear gradient. 
+        /// </summary>
+        /// <param name="description">Description of the pattern (optional, this information is not saved in the DXF file). By default it will use the supplied name.</param>
+        public HatchGradientPattern(string description)
             : base("SOLID", description)
         {
             this.color1 = AciColor.Blue;
@@ -67,12 +75,23 @@ namespace netDxf.Entities
         /// <param name="color">Gradient <see cref="AciColor">color</see>.</param>
         /// <param name="tint">Gradient tint.</param>
         /// <param name="type">Gradient <see cref="HatchGradientPatternType">type</see>.</param>
-        /// <param name="description">Description of the pattern (optional, this information is not saved in the dxf file). By default it will use the supplied name.</param>
-        public HatchGradientPattern(AciColor color, double tint, HatchGradientPatternType type, string description = null)
+        public HatchGradientPattern(AciColor color, double tint, HatchGradientPatternType type)
+            : this(color, tint, type, string.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <c>HatchGradientPattern</c> class as a single color gradient. 
+        /// </summary>
+        /// <param name="color">Gradient <see cref="AciColor">color</see>.</param>
+        /// <param name="tint">Gradient tint.</param>
+        /// <param name="type">Gradient <see cref="HatchGradientPatternType">type</see>.</param>
+        /// <param name="description">Description of the pattern (optional, this information is not saved in the DXF file). By default it will use the supplied name.</param>
+        public HatchGradientPattern(AciColor color, double tint, HatchGradientPatternType type, string description)
             : base("SOLID", description)
         {
             if (color == null)
-                throw new ArgumentNullException("color");
+                throw new ArgumentNullException(nameof(color));
             this.color1 = color;
             this.color2 = this.Color2FromTint(tint);
             this.singleColor = true;
@@ -87,15 +106,26 @@ namespace netDxf.Entities
         /// <param name="color1">Gradient <see cref="AciColor">color</see> 1.</param>
         /// <param name="color2">Gradient <see cref="AciColor">color</see> 2.</param>
         /// <param name="type">Gradient <see cref="HatchGradientPatternType">type</see>.</param>
-        /// <param name="description">Description of the pattern (optional, this information is not saved in the dxf file). By default it will use the supplied name.</param>
-        public HatchGradientPattern(AciColor color1, AciColor color2, HatchGradientPatternType type, string description = null)
+        public HatchGradientPattern(AciColor color1, AciColor color2, HatchGradientPatternType type)
+            : this(color1, color2, type, string.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <c>HatchGradientPattern</c> class as a two color gradient. 
+        /// </summary>
+        /// <param name="color1">Gradient <see cref="AciColor">color</see> 1.</param>
+        /// <param name="color2">Gradient <see cref="AciColor">color</see> 2.</param>
+        /// <param name="type">Gradient <see cref="HatchGradientPatternType">type</see>.</param>
+        /// <param name="description">Description of the pattern (optional, this information is not saved in the DXF file). By default it will use the supplied name.</param>
+        public HatchGradientPattern(AciColor color1, AciColor color2, HatchGradientPatternType type, string description)
             : base("SOLID", description)
         {
             if (color1 == null)
-                throw new ArgumentNullException("color1");
+                throw new ArgumentNullException(nameof(color1));
             this.color1 = color1;
             if (color2 == null)
-                throw new ArgumentNullException("color2");
+                throw new ArgumentNullException(nameof(color2));
             this.color2 = color2;
             this.singleColor = false;
             this.gradientType = type;
@@ -125,7 +155,7 @@ namespace netDxf.Entities
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 this.color1 = value;
             }
         }
@@ -142,7 +172,7 @@ namespace netDxf.Entities
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 this.singleColor = false;
                 this.color2 = value;
             }
@@ -178,11 +208,11 @@ namespace netDxf.Entities
         }
 
         /// <summary>
-        /// Gets or sets the gradient definition; corresponds to the centered option on the gradient.
+        /// Gets or sets if the pattern is centered or not.
         /// </summary>
         /// <remarks>
-        /// Each gradient has two definitions, shifted and unshifted. A shift value describes the blend of the two definitions that should be used.
-        /// A value of 0.0 (false) means only the unshifted version should be used, and a value of 1.0 (true) means that only the shifted version should be used.
+        /// Each gradient has two definitions, shifted and unsifted. A shift value describes the blend of the two definitions that should be used.
+        /// A value of 0.0 (false) means only the unsifted version should be used, and a value of 1.0 (true) means that only the shifted version should be used.
         /// </remarks>
         public bool Centered
         {
@@ -199,6 +229,33 @@ namespace netDxf.Entities
             double h, s, l;
             AciColor.ToHsl(this.color1, out h, out s, out l);
             return AciColor.FromHsl(h, s, value);
+        }
+
+        #endregion
+
+        #region ICloneable
+
+        public override object Clone()
+        {
+            HatchGradientPattern copy = new HatchGradientPattern
+            {
+                // Pattern
+                Fill = this.Fill,
+                Type = this.Type,
+                Origin = this.Origin,
+                Angle = this.Angle,
+                Scale = this.Scale,
+                Style = this.Style,
+                // GraientPattern
+                GradientType = this.gradientType,
+                Color1 = (AciColor) this.color1.Clone(),
+                Color2 = (AciColor) this.color2.Clone(),
+                SingleColor = this.singleColor,
+                Tint = this.tint,
+                Centered = this.centered
+            };
+
+            return copy;
         }
 
         #endregion

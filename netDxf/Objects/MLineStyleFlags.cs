@@ -1,7 +1,7 @@
-#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -34,34 +34,42 @@ namespace netDxf.Objects
         /// None.
         /// </summary>
         None = 0,
+
         /// <summary>
         /// Fill on.
         /// </summary>
         FillOn = 1,
+
         /// <summary>
-        /// Display miters.
+        /// Display miters at the joints (inner vertexes).
         /// </summary>
-        DisplayMiters = 2,
+        DisplayJoints = 2,
+
         /// <summary>
-        /// Start square end (line) cap.
+        /// Start square (line) cap.
         /// </summary>
-        StartSquareEndCap = 16,
+        StartSquareCap = 16,
+
         /// <summary>
         /// Start inner arcs cap.
         /// </summary>
         StartInnerArcsCap = 32,
+
         /// <summary>
         /// Start round (outer arcs) cap.
         /// </summary>
         StartRoundCap = 64,
+
         /// <summary>
         /// End square (line) cap.
         /// </summary>
         EndSquareCap = 256,
+
         /// <summary>
         /// End inner arcs cap.
         /// </summary>
         EndInnerArcsCap = 512,
+
         /// <summary>
         /// End round (outer arcs) cap.
         /// </summary>

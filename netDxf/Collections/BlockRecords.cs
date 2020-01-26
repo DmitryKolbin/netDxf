@@ -1,7 +1,7 @@
-#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+#region netDxf library, Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using netDxf.Blocks;
 using netDxf.Entities;
+using netDxf.Tables;
 
 namespace netDxf.Collections
 {
@@ -33,23 +34,17 @@ namespace netDxf.Collections
     public sealed class BlockRecords :
         TableObjects<Block>
     {
-
         #region constructor
 
-        internal BlockRecords(DxfDocument document, string handle = null)
-            : this(document,0,handle)
+        internal BlockRecords(DxfDocument document)
+            : this(document, null)
         {
         }
 
-        internal BlockRecords(DxfDocument document, int capacity, string handle = null)
-            : base(document,
-            new Dictionary<string, Block>(capacity, StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, List<DxfObject>>(capacity, StringComparer.OrdinalIgnoreCase),
-            StringCode.BlockRecordTable,
-            handle)
+        internal BlockRecords(DxfDocument document, string handle)
+            : base(document, DxfObjectCode.BlockRecordTable, handle)
         {
-            this.maxCapacity = short.MaxValue;
-
+            this.MaxCapacity = short.MaxValue;
         }
 
         #endregion
@@ -60,50 +55,51 @@ namespace netDxf.Collections
         /// Adds a block to the list.
         /// </summary>
         /// <param name="block"><see cref="Block">Block</see> to add to the list.</param>
+        /// <param name="assignHandle">Specifies if a handle needs to be generated for the block parameter.</param>
         /// <returns>
         /// If a block already exists with the same name as the instance that is being added the method returns the existing block,
         /// if not it will return the new block.
         /// </returns>
         internal override Block Add(Block block, bool assignHandle)
         {
-            if (this.list.Count >= this.maxCapacity)
-                throw new OverflowException(String.Format("Table overflow. The maximum number of elements the table {0} can have is {1}", this.codeName, this.maxCapacity));
+            if (this.list.Count >= this.MaxCapacity)
+                throw new OverflowException(string.Format("Table overflow. The maximum number of elements the table {0} can have is {1}", this.CodeName, this.MaxCapacity));
+
+            if (block == null)
+                throw new ArgumentNullException(nameof(block));
 
             Block add;
             if (this.list.TryGetValue(block.Name, out add))
                 return add;
 
-            if(assignHandle)
-                this.document.NumHandles = block.AsignHandle(this.document.NumHandles);
-
-            this.document.AddedObjects.Add(block.Handle, block);
-            this.document.AddedObjects.Add(block.Owner.Handle, block.Owner);
+            if (assignHandle || string.IsNullOrEmpty(block.Handle))
+                this.Owner.NumHandles = block.AssignHandle(this.Owner.NumHandles);
 
             this.list.Add(block.Name, block);
             this.references.Add(block.Name, new List<DxfObject>());
 
-            block.Owner.Owner = this;
-            block.Layer = this.document.Layers.Add(block.Layer);
-            this.document.Layers.References[block.Layer.Name].Add(block);
+            block.Layer = this.Owner.Layers.Add(block.Layer);
+            this.Owner.Layers.References[block.Layer.Name].Add(block);
 
             //for new block definitions configure its entities
-            foreach (EntityObject blockEntity in block.Entities)
-            {
-                this.document.AddEntity(blockEntity, true, assignHandle);
-            }
+            foreach (EntityObject entity in block.Entities)
+                this.Owner.AddEntityToDocument(entity, block, assignHandle);
 
             //for new block definitions configure its attributes
             foreach (AttributeDefinition attDef in block.AttributeDefinitions.Values)
-            {
-                attDef.Layer = this.document.Layers.Add(attDef.Layer);
-                this.document.Layers.References[attDef.Layer.Name].Add(attDef);
+                this.Owner.AddAttributeDefinitionToDocument(attDef, assignHandle);
 
-                attDef.LineType = this.document.LineTypes.Add(attDef.LineType);
-                this.document.LineTypes.References[attDef.LineType.Name].Add(attDef);
+            block.Record.Owner = this;
 
-                attDef.Style = this.document.TextStyles.Add(attDef.Style);
-                this.document.TextStyles.References[attDef.Style.Name].Add(attDef);
-            }
+            block.NameChanged += this.Item_NameChanged;
+            block.LayerChanged += this.Block_LayerChanged;
+            block.EntityAdded += this.Block_EntityAdded;
+            block.EntityRemoved += this.Block_EntityRemoved;
+            block.AttributeDefinitionAdded += this.Block_AttributeDefinitionAdded; 
+            block.AttributeDefinitionRemoved += this.Block_AttributeDefinitionRemoved;
+
+            this.Owner.AddedObjects.Add(block.Handle, block);
+            this.Owner.AddedObjects.Add(block.Owner.Handle, block.Owner);
 
             return block;
         }
@@ -112,60 +108,109 @@ namespace netDxf.Collections
         /// Removes a block.
         /// </summary>
         /// <param name="name"><see cref="Block">Block</see> name to remove from the document.</param>
-        /// <returns>True is the block has been successfully removed, or false otherwise.</returns>
+        /// <returns>True if the block has been successfully removed, or false otherwise.</returns>
         /// <remarks>Reserved blocks or any other referenced by objects cannot be removed.</remarks>
         public override bool Remove(string name)
         {
-            return Remove(this[name]);
+            return this.Remove(this[name]);
         }
 
         /// <summary>
         /// Removes a block.
         /// </summary>
-        /// <param name="block"><see cref="Block">Block</see> to remove from the document.</param>
-        /// <returns>True is the block has been successfully removed, or false otherwise.</returns>
+        /// <param name="item"><see cref="Block">Block</see> to remove from the document.</param>
+        /// <returns>True if the block has been successfully removed, or false otherwise.</returns>
         /// <remarks>Reserved blocks or any other referenced by objects cannot be removed.</remarks>
-        public override bool Remove(Block block)
+        public override bool Remove(Block item)
         {
-            if (block == null)
+            if (item == null)
                 return false;
 
-            if (!this.Contains(block))
+            if (!this.Contains(item))
                 return false;
 
-            if (block.IsReserved)
+            if (item.IsReserved)
                 return false;
 
-            if (this.references[block.Name].Count != 0)
+            if (this.references[item.Name].Count != 0)
                 return false;
 
             // remove the block from the associated layer
-            this.document.Layers.References[block.Layer.Name].Remove(block);
+            this.Owner.Layers.References[item.Layer.Name].Remove(item);
 
             // we will remove all entities from the block definition
-            foreach (EntityObject o in block.Entities)
-            {
-                this.document.RemoveEntity(o, true);
-            }
+            foreach (EntityObject entity in item.Entities)
+                this.Owner.RemoveEntityFromDocument(entity);
 
             // remove all attribute definitions from the associated layers
-            foreach (AttributeDefinition attDef in block.AttributeDefinitions.Values)
-            {
-                this.document.Layers.References[attDef.Layer.Name].Remove(attDef);
-                this.document.LineTypes.References[attDef.LineType.Name].Remove(attDef);
-                this.document.TextStyles.References[attDef.Style.Name].Remove(attDef);
-            }
+            foreach (AttributeDefinition attDef in item.AttributeDefinitions.Values)
+                this.Owner.RemoveAttributeDefinitionFromDocument(attDef);
 
-            block.Record.Owner = null;
-            this.document.AddedObjects.Remove(block.Handle);
-            this.references.Remove(block.Name);
-            this.list.Remove(block.Name);
+            this.Owner.AddedObjects.Remove(item.Handle);
+            this.references.Remove(item.Name);
+            this.list.Remove(item.Name);
+
+            item.Record.Handle = null;
+            item.Record.Owner = null;
+
+            item.Handle = null;
+            item.Owner = null;
+
+            item.NameChanged -= this.Item_NameChanged;
+            item.LayerChanged -= this.Block_LayerChanged;
+            item.EntityAdded -= this.Block_EntityAdded;
+            item.EntityRemoved -= this.Block_EntityRemoved;
+            item.AttributeDefinitionAdded -= this.Block_AttributeDefinitionAdded;
+            item.AttributeDefinitionRemoved -= this.Block_AttributeDefinitionRemoved;
 
             return true;
-
         }
 
         #endregion
 
+        #region Block events
+
+        private void Item_NameChanged(TableObject sender, TableObjectChangedEventArgs<string> e)
+        {
+            if (this.Contains(e.NewValue))
+                throw new ArgumentException("There is already another block with the same name.");
+
+            this.list.Remove(sender.Name);
+            this.list.Add(e.NewValue, (Block) sender);
+
+            List<DxfObject> refs = this.references[sender.Name];
+            this.references.Remove(sender.Name);
+            this.references.Add(e.NewValue, refs);
+        }
+
+        private void Block_LayerChanged(Block sender, TableObjectChangedEventArgs<Layer> e)
+        {
+            this.Owner.Layers.References[e.OldValue.Name].Remove(sender);
+
+            e.NewValue = this.Owner.Layers.Add(e.NewValue);
+            this.Owner.Layers.References[e.NewValue.Name].Add(sender);
+        }
+
+        private void Block_EntityAdded(TableObject sender, BlockEntityChangeEventArgs e)
+        {
+            this.Owner.AddEntityToDocument(e.Item, (Block) sender, string.IsNullOrEmpty(e.Item.Handle));
+        }
+
+        private void Block_EntityRemoved(TableObject sender, BlockEntityChangeEventArgs e)
+        {
+            this.Owner.RemoveEntityFromDocument(e.Item);
+        }
+
+        private void Block_AttributeDefinitionAdded(Block sender, BlockAttributeDefinitionChangeEventArgs e)
+        {
+            this.Owner.AddAttributeDefinitionToDocument(e.Item, string.IsNullOrEmpty(e.Item.Handle));
+        }
+
+        private void Block_AttributeDefinitionRemoved(Block sender, BlockAttributeDefinitionChangeEventArgs e)
+        {
+            this.Owner.RemoveAttributeDefinitionFromDocument(e.Item);
+        }
+
+        #endregion
     }
 }

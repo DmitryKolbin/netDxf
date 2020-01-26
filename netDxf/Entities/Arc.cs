@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,12 +16,13 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 using System;
 using System.Collections.Generic;
+using netDxf.Tables;
 
 namespace netDxf.Entities
 {
@@ -74,6 +75,8 @@ namespace netDxf.Entities
             : base(EntityType.Arc, DxfObjectCode.Arc)
         {
             this.center = center;
+            if (radius <= 0)
+                throw new ArgumentOutOfRangeException(nameof(radius), radius, "The circle radius must be greater than zero.");
             this.radius = radius;
             this.startAngle = MathHelper.NormalizeAngle(startAngle);
             this.endAngle = MathHelper.NormalizeAngle(endAngle);
@@ -102,7 +105,7 @@ namespace netDxf.Entities
             set
             {
                 if (value <= 0)
-                    throw new ArgumentOutOfRangeException("value", value, "The arc radius must be greater than zero.");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The arc radius must be greater than zero.");
                 this.radius = value;
             }
         }
@@ -136,28 +139,28 @@ namespace netDxf.Entities
 
         #endregion
 
-        #region methods
+        #region public methods
 
         /// <summary>
         /// Converts the arc in a list of vertexes.
         /// </summary>
         /// <param name="precision">Number of divisions.</param>
-        /// <returns>A list vertexes that represents the arc expresed in object coordinate system.</returns>
-        private IEnumerable<Vector2> PolygonalVertexes(int precision)
+        /// <returns>A list vertexes that represents the arc expressed in object coordinate system.</returns>
+        public List<Vector2> PolygonalVertexes(int precision)
         {
             if (precision < 2)
-                throw new ArgumentOutOfRangeException("precision", precision, "The arc precision must be greater or equal to two");
+                throw new ArgumentOutOfRangeException(nameof(precision), precision, "The arc precision must be greater or equal to three");
 
             List<Vector2> ocsVertexes = new List<Vector2>();
             double start = this.startAngle*MathHelper.DegToRad;
             double end = this.endAngle*MathHelper.DegToRad;
-            if (end < start)
-                end += MathHelper.TwoPI;
-            double angle = (end - start)/precision;
+            if (end < start) end += MathHelper.TwoPI;
+            double delta = (end - start)/precision;
             for (int i = 0; i <= precision; i++)
             {
-                double sine = this.radius*Math.Sin(start + angle*i);
-                double cosine = this.radius*Math.Cos(start + angle*i);
+                double angle = start + delta*i;
+                double sine = this.radius*Math.Sin(angle);
+                double cosine = this.radius*Math.Cos(angle);
                 ocsVertexes.Add(new Vector2(cosine, sine));
             }
 
@@ -172,23 +175,21 @@ namespace netDxf.Entities
         public LwPolyline ToPolyline(int precision)
         {
             IEnumerable<Vector2> vertexes = this.PolygonalVertexes(precision);
-            Vector3 ocsCenter = MathHelper.Transform(this.center, this.Normal, MathHelper.CoordinateSystem.World,
-                                                     MathHelper.CoordinateSystem.Object);
+            Vector3 ocsCenter = MathHelper.Transform(this.center, this.Normal, CoordinateSystem.World, CoordinateSystem.Object);
 
             LwPolyline poly = new LwPolyline
-                {
-                    Color = this.Color,
-                    IsVisible = this.IsVisible,
-                    Layer = this.Layer,
-                    LineType = this.LineType,
-                    LineTypeScale = this.LineTypeScale,
-                    Lineweight = this.Lineweight,
-                    XData = this.XData,
-                    Normal = this.Normal,
-                    Elevation = ocsCenter.Z,
-                    Thickness = this.Thickness,
-                    IsClosed = false
-                };
+            {
+                Layer = (Layer) this.Layer.Clone(),
+                Linetype = (Linetype) this.Linetype.Clone(),
+                Color = (AciColor) this.Color.Clone(),
+                Lineweight = this.Lineweight,
+                Transparency = (Transparency) this.Transparency.Clone(),
+                LinetypeScale = this.LinetypeScale,
+                Normal = this.Normal,
+                Elevation = ocsCenter.Z,
+                Thickness = this.Thickness,
+                IsClosed = false
+            };
             foreach (Vector2 v in vertexes)
             {
                 poly.Vertexes.Add(new LwPolylineVertex(v.X + ocsCenter.X, v.Y + ocsCenter.Y));
@@ -201,28 +202,89 @@ namespace netDxf.Entities
         #region overrides
 
         /// <summary>
+        /// Moves, scales, and/or rotates the current entity given a 3x3 transformation matrix and a translation vector.
+        /// </summary>
+        /// <param name="transformation">Transformation matrix.</param>
+        /// <param name="translation">Translation vector.</param>
+        /// <remarks>
+        /// Non-uniform scaling is not supported, create an ellipse arc from the arc data and transform that instead.<br />
+        /// Matrix3 adopts the convention of using column vectors to represent a transformation matrix.
+        /// </remarks>
+        public override void TransformBy(Matrix3 transformation, Vector3 translation)
+        {
+            Vector3 newCenter = transformation * this.Center + translation;
+            Vector3 newNormal = transformation * this.Normal;
+            if (Vector3.Equals(Vector3.Zero, newNormal)) newNormal = this.Normal;
+
+            Matrix3 transOW = MathHelper.ArbitraryAxis(this.Normal);
+            Matrix3 transWO = MathHelper.ArbitraryAxis(newNormal).Transpose();
+
+            Vector3 axis = transOW * new Vector3(this.Radius, 0.0, 0.0);
+            axis = transformation * axis;
+            axis = transWO * axis;
+            Vector2 axisPoint = new Vector2(axis.X, axis.Y);
+            double newRadius = axisPoint.Modulus();
+            if (MathHelper.IsZero(newRadius)) newRadius = MathHelper.Epsilon;
+
+            Vector2 start = Vector2.Rotate(new Vector2(this.Radius, 0.0), this.StartAngle * MathHelper.DegToRad);
+            Vector2 end = Vector2.Rotate(new Vector2(this.Radius, 0.0), this.EndAngle * MathHelper.DegToRad);
+
+            Vector3 vStart = transOW * new Vector3(start.X, start.Y, 0.0);
+            vStart = transformation * vStart;
+            vStart = transWO * vStart;
+
+            Vector3 vEnd = transOW * new Vector3(end.X, end.Y, 0.0);
+            vEnd = transformation * vEnd;
+            vEnd = transWO * vEnd;
+
+            Vector2 startPoint = new Vector2(vStart.X, vStart.Y);
+            Vector2 endPoint = new Vector2(vEnd.X, vEnd.Y);
+
+            this.Normal = newNormal;
+            this.Center = newCenter;
+            this.Radius = newRadius;
+
+            if (Math.Sign(transformation.M11 * transformation.M22 * transformation.M33) < 0)
+            {
+                this.EndAngle = Vector2.Angle(startPoint) * MathHelper.RadToDeg;
+                this.StartAngle = Vector2.Angle(endPoint) * MathHelper.RadToDeg;
+            }
+            else
+            {
+                this.StartAngle = Vector2.Angle(startPoint) * MathHelper.RadToDeg;
+                this.EndAngle = Vector2.Angle(endPoint) * MathHelper.RadToDeg;
+            }
+        }
+
+        /// <summary>
         /// Creates a new Arc that is a copy of the current instance.
         /// </summary>
         /// <returns>A new Arc that is a copy of this instance.</returns>
         public override object Clone()
         {
-            return new Arc
-                {
-                    //EntityObject properties
-                    Color = this.color,
-                    Layer = this.layer,
-                    LineType = this.lineType,
-                    Lineweight = this.lineweight,
-                    LineTypeScale = this.lineTypeScale,
-                    Normal = this.normal,
-                    XData = this.xData,
-                    //Arc properties
-                    Center = this.center,
-                    Radius = this.radius,
-                    StartAngle = this.startAngle,
-                    EndAngle = this.endAngle,
-                    Thickness = this.thickness
-                };
+            Arc entity = new Arc
+            {
+                //EntityObject properties
+                Layer = (Layer) this.Layer.Clone(),
+                Linetype = (Linetype) this.Linetype.Clone(),
+                Color = (AciColor) this.Color.Clone(),
+                Lineweight = this.Lineweight,
+                Transparency = (Transparency) this.Transparency.Clone(),
+                LinetypeScale = this.LinetypeScale,
+                Normal = this.Normal,
+                IsVisible = this.IsVisible,
+                //Arc properties
+                Center = this.center,
+                Radius = this.radius,
+                StartAngle = this.startAngle,
+                EndAngle = this.endAngle,
+                Thickness = this.thickness
+            };
+
+            foreach (XData data in this.XData.Values)
+                entity.XData.Add((XData) data.Clone());
+
+            return entity;
         }
 
         #endregion

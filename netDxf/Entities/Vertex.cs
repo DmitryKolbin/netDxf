@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2013 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -26,26 +26,25 @@ using netDxf.Tables;
 namespace netDxf.Entities
 {
     /// <summary>
-    /// Represents a dxf Vertex.
+    /// Represents a DXF Vertex.
     /// </summary>
     /// <remarks>
-    /// The Vertex class holds all the information read from the dxf file even if its needed or not.
-    /// For internal use only.
+    /// The Vertex class holds all the information read from the DXF file even if its needed or not. For internal use only.
     /// </remarks>
     internal class Vertex :
-        DxfObject   
+        DxfObject
     {
         #region private fields
 
         private VertexTypeFlags flags;
-        private Vector3 location;
+        private Vector3 position;
         private short[] vertexIndexes;
-        private double beginThickness;
-        private double endThickness;
+        private double startWidth;
+        private double endWidth;
         private double bulge;
         private AciColor color;
         private Layer layer;
-        private LineType lineType;
+        private Linetype linetype;
 
         #endregion
 
@@ -62,9 +61,9 @@ namespace netDxf.Entities
         /// <summary>
         /// Initializes a new instance of the <c>Vertex</c> class.
         /// </summary>
-        /// <param name="location">Vertex <see cref="netDxf.Vector2">location</see>.</param>
-        public Vertex(Vector2 location)
-            : this(new Vector3(location.X, location.Y, 0.0))
+        /// <param name="position">Vertex <see cref="Vector2">location</see>.</param>
+        public Vertex(Vector2 position)
+            : this(new Vector3(position.X, position.Y, 0.0))
         {
         }
 
@@ -92,32 +91,31 @@ namespace netDxf.Entities
         /// <summary>
         /// Initializes a new instance of the <c>Vertex</c> class.
         /// </summary>
-        /// <param name="location">Vertex <see cref="netDxf.Vector3">location</see>.</param>
-        public Vertex(Vector3 location)
+        /// <param name="position">Vertex <see cref="Vector3">location</see>.</param>
+        public Vertex(Vector3 position)
             : base(DxfObjectCode.Vertex)
         {
             this.flags = VertexTypeFlags.PolylineVertex;
-            this.location = location;
+            this.position = position;
             this.layer = Layer.Default;
             this.color = AciColor.ByLayer;
-            this.lineType = LineType.ByLayer;
+            this.linetype = Linetype.ByLayer;
             this.bulge = 0.0;
-            this.beginThickness = 0.0;
-            this.endThickness = 0.0;
+            this.startWidth = 0.0;
+            this.endWidth = 0.0;
         }
-
 
         #endregion
 
         #region public properties
-        
+
         /// <summary>
-        /// Gets or sets the polyline vertex <see cref="netDxf.Vector3">location</see>.
+        /// Gets or sets the polyline vertex <see cref="Vector3">location</see>.
         /// </summary>
-        public Vector3 Location
+        public Vector3 Position
         {
-            get { return this.location; }
-            set { this.location = value; }
+            get { return this.position; }
+            set { this.position = value; }
         }
 
         public short[] VertexIndexes
@@ -127,21 +125,31 @@ namespace netDxf.Entities
         }
 
         /// <summary>
-        /// Gets or sets the light weight polyline begin thickness.
+        /// Gets or sets the light weight polyline start segment width.
         /// </summary>
-        public double BeginThickness
+        public double StartWidth
         {
-            get { return this.beginThickness; }
-            set { this.beginThickness = value; }
+            get { return this.startWidth; }
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The Vertex width must be equals or greater than zero.");
+                this.startWidth = value;
+            }
         }
 
         /// <summary>
-        /// Gets or sets the light weight polyline end thickness.
+        /// Gets or sets the light weight polyline end segment width.
         /// </summary>
-        public double EndThickness
+        public double EndWidth
         {
-            get { return this.endThickness; }
-            set { this.endThickness = value; }
+            get { return this.endWidth; }
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The Vertex width must be equals or greater than zero.");
+                this.endWidth = value;
+            }
         }
 
         /// <summary>
@@ -158,9 +166,7 @@ namespace netDxf.Entities
             set
             {
                 if (this.bulge < 0.0 || this.bulge > 1.0f)
-                {
-                    throw new ArgumentOutOfRangeException("value", value, "The bulge must be a value between zero and one");
-                }
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The bulge must be a value between zero and one");
                 this.bulge = value;
             }
         }
@@ -171,16 +177,21 @@ namespace netDxf.Entities
         public VertexTypeFlags Flags
         {
             get { return this.flags; }
-            set { this.flags = value;}
+            set { this.flags = value; }
         }
 
-       /// <summary>
+        /// <summary>
         /// Gets or sets the entity color.
         /// </summary>
         public AciColor Color
         {
             get { return this.color; }
-            set { this.color = value; }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+                this.color = value;
+            }
         }
 
         /// <summary>
@@ -189,16 +200,26 @@ namespace netDxf.Entities
         public Layer Layer
         {
             get { return this.layer; }
-            set { this.layer = value; }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+                this.layer = value;
+            }
         }
 
         /// <summary>
         /// Gets or sets the entity line type.
         /// </summary>
-        public LineType LineType
+        public Linetype Linetype
         {
-            get { return this.lineType; }
-            set { this.lineType = value; }
+            get { return this.linetype; }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+                this.linetype = value;
+            }
         }
 
         #endregion

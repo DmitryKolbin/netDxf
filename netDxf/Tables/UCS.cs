@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -26,12 +26,11 @@ using netDxf.Collections;
 namespace netDxf.Tables
 {
     /// <summary>
-    /// Represents a User Coordiante System.
+    /// Represents a User Coordinate System.
     /// </summary>
     public class UCS :
         TableObject
     {
-
         #region private fields
 
         private Vector3 origin;
@@ -47,13 +46,23 @@ namespace netDxf.Tables
         /// <summary>
         /// Initializes a new instance of the <c>UCS</c> class.
         /// </summary>
+        /// <param name="name">User coordinate system name.</param>
         public UCS(string name)
-            : base(name, DxfObjectCode.Ucs, true)
+            : this(name, true)
         {
+        }
+
+        internal UCS(string name, bool checkName)
+            : base(name, DxfObjectCode.Ucs, checkName)
+        {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentNullException(nameof(name), "The UCS name should be at least one character long.");
+
             this.origin = Vector3.Zero;
             this.xAxis = Vector3.UnitX;
             this.yAxis = Vector3.UnitY;
             this.zAxis = Vector3.UnitZ;
+            this.elevation = 0;
         }
 
         /// <summary>
@@ -67,16 +76,22 @@ namespace netDxf.Tables
         /// The x-axis direction and y-axis direction must be perpendicular.
         /// </remarks>
         public UCS(string name, Vector3 origin, Vector3 xDirection, Vector3 yDirection)
-            : base(name, DxfObjectCode.Ucs, true)
+            : this(name, origin, xDirection, yDirection, true)
         {
-            if(!Vector3.ArePerpendicular(xDirection, yDirection))
+        }
+
+        internal UCS(string name, Vector3 origin, Vector3 xDirection, Vector3 yDirection, bool checkName)
+            : base(name, DxfObjectCode.Ucs, checkName)
+        {
+            if (!Vector3.ArePerpendicular(xDirection, yDirection))
                 throw new ArgumentException("X-axis direction and Y-axis direction must be perpendicular.");
             this.origin = origin;
             this.xAxis = xDirection;
             this.xAxis.Normalize();
             this.yAxis = yDirection;
             this.yAxis.Normalize();
-            this.zAxis = Vector3.CrossProduct(xAxis, yAxis);
+            this.zAxis = Vector3.CrossProduct(this.xAxis, this.yAxis);
+            this.elevation = 0;
         }
 
         #endregion
@@ -126,12 +141,12 @@ namespace netDxf.Tables
         }
 
         /// <summary>
-        /// Gets the owner of the actual dxf object.
+        /// Gets the owner of the actual user coordinate system.
         /// </summary>
         public new UCSs Owner
         {
-            get { return (UCSs)this.owner; }
-            internal set { this.owner = value; }
+            get { return (UCSs) base.Owner; }
+            internal set { base.Owner = value; }
         }
 
         #endregion
@@ -198,5 +213,39 @@ namespace netDxf.Tables
 
         #endregion
 
+        #region overrides
+
+        /// <summary>
+        /// Creates a new UCS that is a copy of the current instance.
+        /// </summary>
+        /// <param name="newName">UCS name of the copy.</param>
+        /// <returns>A new UCS that is a copy of this instance.</returns>
+        public override TableObject Clone(string newName)
+        {
+            UCS copy = new UCS(newName)
+            {
+                Origin = this.origin,
+                xAxis = this.xAxis,
+                yAxis = this.yAxis,
+                zAxis = this.zAxis,
+                Elevation = this.elevation
+            };
+
+            foreach (XData data in this.XData.Values)
+                copy.XData.Add((XData)data.Clone());
+
+            return copy;
+        }
+
+        /// <summary>
+        /// Creates a new UCS that is a copy of the current instance.
+        /// </summary>
+        /// <returns>A new UCS that is a copy of this instance.</returns>
+        public override object Clone()
+        {
+            return this.Clone(this.Name);
+        }
+
+        #endregion
     }
 }

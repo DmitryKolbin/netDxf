@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2018 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,17 +16,187 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 namespace netDxf
 {
     /// <summary>
-    /// Dxf entities codes (code 0).
+    /// DXF string codes.
     /// </summary>
-    public sealed class DxfObjectCode
+    public static class DxfObjectCode
     {
+        /// <summary>
+        /// Not defined.
+        /// </summary>
+        public const string Unknown = "";
+
+        /// <summary>
+        /// Header section.
+        /// </summary>
+        public const string HeaderSection = "HEADER";
+
+        /// <summary>
+        /// Classes section.
+        /// </summary>
+        public const string ClassesSection = "CLASSES";
+
+        /// <summary>
+        /// Class entry.
+        /// </summary>
+        public const string Class = "CLASS";
+
+        /// <summary>
+        /// Tables section.
+        /// </summary>
+        public const string TablesSection = "TABLES";
+
+        /// <summary>
+        /// Blocks section.
+        /// </summary>
+        public const string BlocksSection = "BLOCKS";
+
+        /// <summary>
+        /// Entities section.
+        /// </summary>
+        public const string EntitiesSection = "ENTITIES";
+
+        /// <summary>
+        /// Objects section.
+        /// </summary>
+        public const string ObjectsSection = "OBJECTS";
+
+        /// <summary>
+        /// Thumbnail section.
+        /// </summary>
+        public const string ThumbnailImageSection = "THUMBNAILIMAGE";
+
+        /// <summary>
+        /// AcdsData section. Currently it is used for storing the data for solids, regions, surfaces, and the preview image.
+        /// </summary>
+        public const string AcdsDataSection = "ACDSDATA";
+
+        /// <summary>
+        /// Begin section code.
+        /// </summary>
+        public const string BeginSection = "SECTION";
+
+        /// <summary>
+        /// End section code.
+        /// </summary>
+        public const string EndSection = "ENDSEC";
+
+        /// <summary>
+        /// Layers table.
+        /// </summary>
+        public const string LayerTable = "LAYER";
+
+        /// <summary>
+        /// Viewports table.
+        /// </summary>
+        public const string VportTable = "VPORT";
+
+        /// <summary>
+        /// Views table.
+        /// </summary>
+        public const string ViewTable = "VIEW";
+
+        /// <summary>
+        /// User coordinate system table.
+        /// </summary>
+        public const string UcsTable = "UCS";
+
+        /// <summary>
+        /// Block records table.
+        /// </summary>
+        public const string BlockRecordTable = "BLOCK_RECORD";
+
+        /// <summary>
+        /// Line types table.
+        /// </summary>
+        public const string LinetypeTable = "LTYPE";
+
+        /// <summary>
+        /// Text styles table.
+        /// </summary>
+        public const string TextStyleTable = "STYLE";
+
+        /// <summary>
+        /// Dimension styles table.
+        /// </summary>
+        public const string DimensionStyleTable = "DIMSTYLE";
+
+        /// <summary>
+        /// Extended data application registries  table.
+        /// </summary>
+        public const string ApplicationIdTable = "APPID";
+
+        /// <summary>
+        /// Begin table code.
+        /// </summary>
+        public const string Table = "TABLE";
+
+        /// <summary>
+        /// End table code.
+        /// </summary>
+        public const string EndTable = "ENDTAB";
+
+        /// <summary>
+        /// Begin block code.
+        /// </summary>
+        public const string BeginBlock = "BLOCK";
+
+        /// <summary>
+        /// End block code.
+        /// </summary>
+        public const string EndBlock = "ENDBLK";
+
+        /// <summary>
+        /// Group dictionary.
+        /// </summary>
+        public const string GroupDictionary = "ACAD_GROUP";
+
+        /// <summary>
+        /// Layouts dictionary.
+        /// </summary>
+        public const string LayoutDictionary = "ACAD_LAYOUT";
+
+        /// <summary>
+        /// Multiline styles dictionary.
+        /// </summary>
+        public const string MLineStyleDictionary = "ACAD_MLINESTYLE";
+
+        /// <summary>
+        /// Multiline styles dictionary.
+        /// </summary>
+        public const string ImageDefDictionary = "ACAD_IMAGE_DICT";
+
+        /// <summary>
+        /// MLine styles dictionary.
+        /// </summary>
+        public const string ImageVarsDictionary = "ACAD_IMAGE_VARS";
+
+        /// <summary>
+        /// DGN underlay definition dictionary.
+        /// </summary>
+        public const string UnderlayDgnDefinitionDictionary = "ACAD_DGNDEFINITIONS";
+
+        /// <summary>
+        /// DWF underlay definition styles dictionary.
+        /// </summary>
+        public const string UnderlayDwfDefinitionDictionary = "ACAD_DWFDEFINITIONS";
+
+        /// <summary>
+        /// PDF underlay definition styles dictionary.
+        /// </summary>
+        public const string UnderlayPdfDefinitionDictionary = "ACAD_PDFDEFINITIONS";
+
+        /// <summary>
+        /// End of file.
+        /// </summary>
+        public const string EndOfFile = "EOF";
+
         /// <summary>
         /// Application registry.
         /// </summary>
@@ -45,7 +215,7 @@ namespace netDxf
         /// <summary>
         /// Line type.
         /// </summary>
-        public const string LineType = "LTYPE";
+        public const string Linetype = "LTYPE";
 
         /// <summary>
         /// Layer.
@@ -63,7 +233,7 @@ namespace netDxf
         public const string TextStyle = "STYLE";
 
         /// <summary>
-        /// MLine style.
+        /// Multiline style.
         /// </summary>
         public const string MLineStyle = "MLINESTYLE";
 
@@ -73,7 +243,7 @@ namespace netDxf
         public const string View = "VIEW";
 
         /// <summary>
-        /// Ucs.
+        /// User coordinate system.
         /// </summary>
         public const string Ucs = "UCS";
 
@@ -133,6 +303,11 @@ namespace netDxf
         public const string Arc = "ARC";
 
         /// <summary>
+        /// Shape
+        /// </summary>
+        public const string Shape = "SHAPE";
+
+        /// <summary>
         /// Spline (nonuniform rational B-splines NURBS).
         /// </summary>
         public const string Spline = "SPLINE";
@@ -141,6 +316,16 @@ namespace netDxf
         /// Solid.
         /// </summary>
         public const string Solid = "SOLID";
+
+        /// <summary>
+        /// Table made of rows and columns.
+        /// </summary>
+        public const string AcadTable = "ACAD_TABLE";
+
+        /// <summary>
+        /// Trace.
+        /// </summary>
+        public const string Trace = "TRACE";
 
         /// <summary>
         /// Text string.
@@ -168,11 +353,6 @@ namespace netDxf
         public const string Face3d = "3DFACE";
 
         /// <summary>
-        /// Helix.
-        /// </summary>
-        public const string Helix = "HELIX";
-
-        /// <summary>
         /// Block insertion.
         /// </summary>
         public const string Insert = "INSERT";
@@ -181,6 +361,61 @@ namespace netDxf
         /// Hatch.
         /// </summary>
         public const string Hatch = "HATCH";
+
+        /// <summary>
+        /// Leader.
+        /// </summary>
+        public const string Leader = "LEADER";
+
+        /// <summary>
+        /// Tolerance.
+        /// </summary>
+        public const string Tolerance = "TOLERANCE";
+
+        /// <summary>
+        /// Wipeout.
+        /// </summary>
+        public const string Wipeout = "WIPEOUT";
+
+        /// <summary>
+        /// Underlay.
+        /// </summary>
+        public const string Underlay = "UNDERLAY";
+
+        /// <summary>
+        /// PDF underlay.
+        /// </summary>
+        public const string UnderlayPdf = "PDFUNDERLAY";
+
+        /// <summary>
+        /// DWF underlay.
+        /// </summary>
+        public const string UnderlayDwf = "DWFUNDERLAY";
+
+        /// <summary>
+        /// DGN underlay.
+        /// </summary>
+        public const string UnderlayDgn = "DGNUNDERLAY";
+
+        /// <summary>
+        /// Underlay definition.
+        /// </summary>
+        public const string UnderlayDefinition = "UNDERLAYDEFINITION";
+
+        /// <summary>
+        /// PDF underlay definition.
+        /// </summary>
+        public const string UnderlayPdfDefinition = "PDFDEFINITION";
+
+        /// <summary>
+        /// DWF underlay definition.
+        /// </summary>
+        public const string UnderlayDwfDefinition = "DWFDEFINITION";
+
+        /// <summary>
+        /// DGN underlay definition.
+        /// </summary>
+        public const string UnderlayDgnDefinition = "DGNDEFINITION";
 
         /// <summary>
         /// Attribute definition.

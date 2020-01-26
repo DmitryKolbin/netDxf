@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,13 +16,14 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 using System;
 using System.Collections.Generic;
 using netDxf.Blocks;
+using netDxf.Collections;
 using netDxf.Tables;
 
 namespace netDxf.Entities
@@ -30,23 +31,72 @@ namespace netDxf.Entities
     /// <summary>
     /// Represents a generic entity.
     /// </summary>
-    public abstract class EntityObject
-        : DxfObject, ICloneable
+    public abstract class EntityObject :
+        DxfObject,
+        IHasXData,
+        ICloneable
     {
+        #region delegates and events
+
+        public delegate void LayerChangedEventHandler(EntityObject sender, TableObjectChangedEventArgs<Layer> e);
+        public event LayerChangedEventHandler LayerChanged;
+        protected virtual Layer OnLayerChangedEvent(Layer oldLayer, Layer newLayer)
+        {
+            LayerChangedEventHandler ae = this.LayerChanged;
+            if (ae != null)
+            {
+                TableObjectChangedEventArgs<Layer> eventArgs = new TableObjectChangedEventArgs<Layer>(oldLayer, newLayer);
+                ae(this, eventArgs);
+                return eventArgs.NewValue;
+            }
+            return newLayer;
+        }
+
+        public delegate void LinetypeChangedEventHandler(EntityObject sender, TableObjectChangedEventArgs<Linetype> e);
+        public event LinetypeChangedEventHandler LinetypeChanged;
+        protected virtual Linetype OnLinetypeChangedEvent(Linetype oldLinetype, Linetype newLinetype)
+        {
+            LinetypeChangedEventHandler ae = this.LinetypeChanged;
+            if (ae != null)
+            {
+                TableObjectChangedEventArgs<Linetype> eventArgs = new TableObjectChangedEventArgs<Linetype>(oldLinetype, newLinetype);
+                ae(this, eventArgs);
+                return eventArgs.NewValue;
+            }
+            return newLinetype;
+        }
+
+        public event XDataAddAppRegEventHandler XDataAddAppReg;
+        protected virtual void OnXDataAddAppRegEvent(ApplicationRegistry item)
+        {
+            XDataAddAppRegEventHandler ae = this.XDataAddAppReg;
+            if (ae != null)
+                ae(this, new ObservableCollectionEventArgs<ApplicationRegistry>(item));
+        }
+
+        public event XDataRemoveAppRegEventHandler XDataRemoveAppReg;
+        protected virtual void OnXDataRemoveAppRegEvent(ApplicationRegistry item)
+        {
+            XDataRemoveAppRegEventHandler ae = this.XDataRemoveAppReg;
+            if (ae != null)
+                ae(this, new ObservableCollectionEventArgs<ApplicationRegistry>(item));
+        }
+
+        #endregion
+
         #region private fields
 
         private readonly EntityType type;
-        protected AciColor color;
-        protected Layer layer;
-        protected LineType lineType;
-        protected Lineweight lineweight;
-        protected Transparency transparency;
-        protected double lineTypeScale;
-        protected bool isVisible;
-        protected Vector3 normal;
-        protected Dictionary<string, XData> xData;
-        protected DxfObject reactor;
-
+        private AciColor color;
+        private Layer layer;
+        private Linetype linetype;
+        private Lineweight lineweight;
+        private Transparency transparency;
+        private double linetypeScale;
+        private bool isVisible;
+        private Vector3 normal;
+        private readonly XDataDictionary xData;
+        private readonly List<DxfObject> reactors;
 
         #endregion
 
@@ -58,13 +108,16 @@ namespace netDxf.Entities
             this.type = type;
             this.color = AciColor.ByLayer;
             this.layer = Layer.Default;
-            this.lineType = LineType.ByLayer;
+            this.linetype = Linetype.ByLayer;
             this.lineweight = Lineweight.ByLayer;
             this.transparency = Transparency.ByLayer;
-            this.lineTypeScale = 1.0;
+            this.linetypeScale = 1.0;
             this.isVisible = true;
             this.normal = Vector3.UnitZ;
-            this.xData = new Dictionary<string, XData>(StringComparer.OrdinalIgnoreCase);
+            this.reactors = new List<DxfObject>();
+            this.xData = new XDataDictionary();
+            this.xData.AddAppReg += this.XData_AddAppReg;
+            this.xData.RemoveAppReg += this.XData_RemoveAppReg;
         }
 
         #endregion
@@ -72,16 +125,11 @@ namespace netDxf.Entities
         #region public properties
 
         /// <summary>
-        /// Gets the object that has been attached to this entity.
+        /// Gets the list of DXF objects that has been attached to this entity.
         /// </summary>
-        /// <remarks>
-        /// This information is subject to change in the future to become a list, an entity can be attached to multiple objects;
-        /// but at the moment only the viewport clipping boundary make use of this. Use this information with care.
-        /// </remarks>
-        public DxfObject Reactor
+        public IReadOnlyList<DxfObject> Reactors
         {
-            get { return this.reactor; }
-            internal set { this.reactor = value; }
+            get { return this.reactors; }
         }
 
         /// <summary>
@@ -101,7 +149,7 @@ namespace netDxf.Entities
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 this.color = value;
             }
         }
@@ -115,41 +163,36 @@ namespace netDxf.Entities
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
-                this.layer = value;
+                    throw new ArgumentNullException(nameof(value));
+                this.layer = this.OnLayerChangedEvent(this.layer, value);
             }
         }
 
         /// <summary>
-        /// Gets or sets the entity <see cref="LineType">line type</see>.
+        /// Gets or sets the entity <see cref="Linetype">line type</see>.
         /// </summary>
-        public LineType LineType
+        public Linetype Linetype
         {
-            get { return this.lineType; }
+            get { return this.linetype; }
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
-                this.lineType = value;
+                    throw new ArgumentNullException(nameof(value));
+                this.linetype = this.OnLinetypeChangedEvent(this.linetype, value);
             }
         }
 
         /// <summary>
-        /// Gets or sets the entity line weight, one unit is always 1/100 mm (default = ByLayer).
+        /// Gets or sets the entity <see cref="Lineweight">line weight</see>, one unit is always 1/100 mm (default = ByLayer).
         /// </summary>
         public Lineweight Lineweight
         {
             get { return this.lineweight; }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException("value");
-                this.lineweight = value;
-            }
+            set { this.lineweight = value; }
         }
 
         /// <summary>
-        /// Gets or sets layer transparency (default: ByLayer).
+        /// Gets or sets layer <see cref="Transparency">transparency</see> (default: ByLayer).
         /// </summary>
         public Transparency Transparency
         {
@@ -157,22 +200,22 @@ namespace netDxf.Entities
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 this.transparency = value;
             }
         }
 
         /// <summary>
-        /// Gets or sets the entity linetype scale.
+        /// Gets or sets the entity line type scale.
         /// </summary>
-        public double LineTypeScale
+        public double LinetypeScale
         {
-            get { return this.lineTypeScale; }
+            get { return this.linetypeScale; }
             set
             {
                 //if (value <= 0)
-                //    throw new ArgumentOutOfRangeException("value", value, "The linetype scale must be greater than zero.");
-                this.lineTypeScale = value;
+                //    throw new ArgumentOutOfRangeException(nameof(value), value, "The line type scale must be greater than zero.");
+                this.linetypeScale = value;
             }
         }
 
@@ -193,34 +236,68 @@ namespace netDxf.Entities
             get { return this.normal; }
             set
             {
-                if (value == Vector3.Zero)
-                    throw new ArgumentNullException("value", "The normal can not be the zero vector.");
-                this.normal = value;
-                this.normal.Normalize();
+                if(Vector3.Equals(Vector3.Zero, value))
+                    throw new ArgumentException("The normal can not be the zero vector.", nameof(value));
+                this.normal = Vector3.Normalize(value);
             }
         }
 
         /// <summary>
-        /// Gets the owner of the actual dxf object.
+        /// Gets the owner of the actual DXF object.
         /// </summary>
         public new Block Owner
         {
-            get { return (Block) this.owner; }
-            internal set { this.owner = value; }
+            get { return (Block) base.Owner; }
+            internal set { base.Owner = value; }
         }
 
         /// <summary>
-        /// Gets or sets the entity <see cref="XData">extende data</see> (key: ApplicationRegistry.Name, value: XData).
+        /// Gets the entity <see cref="XDataDictionary">extended data</see>.
         /// </summary>
-        public Dictionary<string, XData> XData
+        public XDataDictionary XData
         {
             get { return this.xData; }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException("value");
-                this.xData = value;
-            }
+        }
+
+        #endregion
+
+        #region internal methods
+
+        internal void AddReactor(DxfObject o)
+        {
+            this.reactors.Add(o);
+        }
+
+        internal bool RemoveReactor(DxfObject o)
+        {
+            return this.reactors.Remove(o);
+        }
+
+        #endregion
+
+        #region public methods
+
+        /// <summary>
+        /// Moves, scales, and/or rotates the current entity given a 3x3 transformation matrix and a translation vector.
+        /// </summary>
+        /// <param name="transformation">Transformation matrix.</param>
+        /// <param name="translation">Translation vector.</param>
+        /// <remarks>Matrix3 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
+        public abstract void TransformBy(Matrix3 transformation, Vector3 translation);
+
+        /// <summary>
+        /// Moves, scales, and/or rotates the current entity given a 4x4 transformation matrix.
+        /// </summary>
+        /// <param name="transformation">Transformation matrix.</param>
+        /// <remarks>Matrix4 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
+        public void TransformBy(Matrix4 transformation)
+        {
+            Matrix3 m = new Matrix3(transformation.M11, transformation.M12, transformation.M13,
+                                    transformation.M21, transformation.M22, transformation.M23,
+                                    transformation.M31, transformation.M32, transformation.M33);
+            Vector3 v = new Vector3(transformation.M14, transformation.M24, transformation.M34);
+
+            this.TransformBy(m, v);
         }
 
         #endregion
@@ -245,6 +322,20 @@ namespace netDxf.Entities
         /// </summary>
         /// <returns>A new entity that is a copy of this instance.</returns>
         public abstract object Clone();
+
+        #endregion
+
+        #region XData events
+
+        private void XData_AddAppReg(XDataDictionary sender, ObservableCollectionEventArgs<ApplicationRegistry> e)
+        {
+            this.OnXDataAddAppRegEvent(e.Item);
+        }
+
+        private void XData_RemoveAppReg(XDataDictionary sender, ObservableCollectionEventArgs<ApplicationRegistry> e)
+        {
+            this.OnXDataRemoveAppRegEvent(e.Item);
+        }
 
         #endregion
     }

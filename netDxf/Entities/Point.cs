@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,9 +16,11 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
+
+using netDxf.Tables;
 
 namespace netDxf.Entities
 {
@@ -30,7 +32,7 @@ namespace netDxf.Entities
     {
         #region private fields
 
-        private Vector3 location;
+        private Vector3 position;
         private double thickness;
         private double rotation;
 
@@ -41,11 +43,11 @@ namespace netDxf.Entities
         /// <summary>
         /// Initializes a new instance of the <c>Point</c> class.
         /// </summary>
-        /// <param name="location">Point <see cref="Vector3">location</see>.</param>
-        public Point(Vector3 location)
+        /// <param name="position">Point <see cref="Vector3">position</see>.</param>
+        public Point(Vector3 position)
             : base(EntityType.Point, DxfObjectCode.Point)
         {
-            this.location = location;
+            this.position = position;
             this.thickness = 0.0f;
             this.rotation = 0.0;
         }
@@ -53,9 +55,9 @@ namespace netDxf.Entities
         /// <summary>
         /// Initializes a new instance of the <c>Point</c> class.
         /// </summary>
-        /// <param name="location">Point <see cref="Vector2">location</see>.</param>
-        public Point(Vector2 location)
-            : this(new Vector3(location.X, location.Y, 0.0))
+        /// <param name="position">Point <see cref="Vector2">position</see>.</param>
+        public Point(Vector2 position)
+            : this(new Vector3(position.X, position.Y, 0.0))
         {
         }
 
@@ -68,7 +70,6 @@ namespace netDxf.Entities
         public Point(double x, double y, double z)
             : this(new Vector3(x, y, z))
         {
-
         }
 
         /// <summary>
@@ -84,12 +85,12 @@ namespace netDxf.Entities
         #region public properties
 
         /// <summary>
-        /// Gets or sets the point <see cref="netDxf.Vector3">location</see>.
+        /// Gets or sets the point <see cref="Vector3">position</see>.
         /// </summary>
-        public Vector3 Location
+        public Vector3 Position
         {
-            get { return this.location; }
-            set { this.location = value; }
+            get { return this.position; }
+            set { this.position = value; }
         }
 
         /// <summary>
@@ -115,29 +116,60 @@ namespace netDxf.Entities
         #region overrides
 
         /// <summary>
+        /// Moves, scales, and/or rotates the current entity given a 3x3 transformation matrix and a translation vector.
+        /// </summary>
+        /// <param name="transformation">Transformation matrix.</param>
+        /// <param name="translation">Translation vector.</param>
+        /// <remarks>Matrix3 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
+        public override void TransformBy(Matrix3 transformation, Vector3 translation)
+        {
+            Vector3 newPosition = transformation * this.Position + translation;
+            Vector3 newNormal = transformation * this.Normal;
+            if (Vector3.Equals(Vector3.Zero, newNormal)) newNormal = this.Normal;
+
+            Matrix3 transOW = MathHelper.ArbitraryAxis(this.Normal);
+            Matrix3 transWO = MathHelper.ArbitraryAxis(newNormal).Transpose();
+
+            Vector2 refAxis = Vector2.Rotate(Vector2.UnitX, this.Rotation * MathHelper.DegToRad);
+            Vector3 v = transOW * new Vector3(refAxis.X, refAxis.Y, 0.0);
+            v = transformation * v;
+            v = transWO * v;
+            double newRotation = Vector2.Angle(new Vector2(v.X, v.Y)) * MathHelper.RadToDeg;
+
+            this.Position = newPosition;
+            this.Rotation = newRotation;
+            this.Normal = newNormal;
+        }
+
+        /// <summary>
         /// Creates a new Point that is a copy of the current instance.
         /// </summary>
         /// <returns>A new Point that is a copy of this instance.</returns>
         public override object Clone()
         {
-            return new Point
+            Point entity = new Point
             {
                 //EntityObject properties
-                Color = this.color,
-                Layer = this.layer,
-                LineType = this.lineType,
-                Lineweight = this.lineweight,
-                LineTypeScale = this.lineTypeScale,
-                Normal = this.normal,
-                XData = this.xData,
+                Layer = (Layer) this.Layer.Clone(),
+                Linetype = (Linetype) this.Linetype.Clone(),
+                Color = (AciColor) this.Color.Clone(),
+                Lineweight = this.Lineweight,
+                Transparency = (Transparency) this.Transparency.Clone(),
+                LinetypeScale = this.LinetypeScale,
+                Normal = this.Normal,
+                IsVisible = this.IsVisible,
                 //Point properties
-                Location = this.location,
+                Position = this.position,
                 Rotation = this.rotation,
                 Thickness = this.thickness
             };
+
+            foreach (XData data in this.XData.Values)
+                entity.XData.Add((XData) data.Clone());
+
+            return entity;
         }
 
         #endregion
-
     }
 }

@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2014 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,13 +16,13 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using netDxf.Tables;
 
 namespace netDxf.Entities
 {
@@ -53,19 +53,29 @@ namespace netDxf.Entities
         /// </summary>
         /// <param name="vertexes">Mesh vertex list.</param>
         /// <param name="faces">Mesh faces list.</param>
-        /// <param name="edges">Mesh edges list, this parameter is optional and only really useful when it is required to assign creases values to edges.</param>
-        public Mesh(List<Vector3> vertexes, List<int[]> faces, List<MeshEdge> edges = null)
+        public Mesh(IEnumerable<Vector3> vertexes, IEnumerable<int[]> faces)
+            : this(vertexes, faces, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <c>Mesh</c> class.
+        /// </summary>
+        /// <param name="vertexes">Mesh vertex list.</param>
+        /// <param name="faces">Mesh faces list.</param>
+        /// <param name="edges">Mesh edges list, this parameter is only really useful when it is required to assign creases values to edges.</param>
+        public Mesh(IEnumerable<Vector3> vertexes, IEnumerable<int[]> faces, IEnumerable<MeshEdge> edges)
             : base(EntityType.Mesh, DxfObjectCode.Mesh)
         {
             if (vertexes == null)
-                throw new ArgumentNullException("vertexes", "The Mesh vertexes list cannot be null.");
-            this.vertexes = vertexes;
+                throw new ArgumentNullException(nameof(vertexes));
+            this.vertexes = new List<Vector3>(vertexes);
             if (faces == null)
-                throw new ArgumentNullException("faces", "The Mesh faces list cannot be null.");
-            if (faces.Count > MaxFaces)
-                throw new ArgumentOutOfRangeException("faces", faces.Count, String.Format("The maximum number of faces in a mesh is {0}", MaxFaces));
-            this.faces = faces;
-            this.edges = edges;
+                throw new ArgumentNullException(nameof(faces));
+            this.faces = new List<int[]>(faces);
+            if (this.faces.Count > MaxFaces)
+                throw new ArgumentOutOfRangeException(nameof(faces), this.faces.Count, string.Format("The maximum number of faces in a mesh is {0}", MaxFaces));
+            this.edges = edges == null ? new List<MeshEdge>() : new List<MeshEdge>(edges);
             this.subdivisionLevel = 0;
         }
 
@@ -76,29 +86,25 @@ namespace netDxf.Entities
         /// <summary>
         /// Gets the mesh vertexes list.
         /// </summary>
-        public ReadOnlyCollection<Vector3> Vertexes
+        public List<Vector3> Vertexes
         {
-            get { return this.vertexes.AsReadOnly(); }
+            get { return this.vertexes; }
         }
 
         /// <summary>
         /// Gets the mesh faces list.
         /// </summary>
-        public ReadOnlyCollection<int[]> Faces
+        public List<int[]> Faces
         {
-            get { return this.faces.AsReadOnly(); }
+            get { return this.faces; }
         }
 
         /// <summary>
         /// Gets the mesh edges list.
         /// </summary>
-        public ReadOnlyCollection<MeshEdge> Edges
+        public List<MeshEdge> Edges
         {
-            get
-            {
-                if (this.edges == null) return null;
-                return this.edges.AsReadOnly();
-            }
+            get { return this.edges; }
         }
 
         /// <summary>
@@ -118,6 +124,24 @@ namespace netDxf.Entities
         #region overrides
 
         /// <summary>
+        /// Moves, scales, and/or rotates the current entity given a 3x3 transformation matrix and a translation vector.
+        /// </summary>
+        /// <param name="transformation">Transformation matrix.</param>
+        /// <param name="translation">Translation vector.</param>
+        /// <remarks>Matrix3 adopts the convention of using column vectors to represent a transformation matrix.</remarks>
+        public override void TransformBy(Matrix3 transformation, Vector3 translation)
+        {
+            for (int i = 0; i < this.Vertexes.Count; i++)
+            {
+                this.Vertexes[i] = transformation * this.Vertexes[i] + translation;
+            }
+
+            Vector3 newNormal = transformation * this.Normal;
+            if (Vector3.Equals(Vector3.Zero, newNormal)) newNormal = this.Normal;
+            this.Normal = newNormal;
+        }
+
+        /// <summary>
         /// Creates a new Mesh that is a copy of the current instance.
         /// </summary>
         /// <returns>A new Mesh that is a copy of this instance.</returns>
@@ -127,7 +151,7 @@ namespace netDxf.Entities
             List<int[]> copyFaces = new List<int[]>(this.faces.Count);
             List<MeshEdge> copyEdges = null;
 
-            copyVertexes.AddRange(this.vertexes.ToArray());
+            copyVertexes.AddRange(this.vertexes);
             foreach (int[] face in this.faces)
             {
                 int[] copyFace = new int[face.Length];
@@ -143,19 +167,25 @@ namespace netDxf.Entities
                 }
             }
 
-            return new Mesh(copyVertexes, copyFaces, copyEdges)
+            Mesh entity = new Mesh(copyVertexes, copyFaces, copyEdges)
             {
                 //EntityObject properties
-                Color = this.color,
-                Layer = this.layer,
-                LineType = this.lineType,
-                Lineweight = this.lineweight,
-                LineTypeScale = this.lineTypeScale,
-                Normal = this.normal,
-                XData = this.xData,
+                Layer = (Layer) this.Layer.Clone(),
+                Linetype = (Linetype) this.Linetype.Clone(),
+                Color = (AciColor) this.Color.Clone(),
+                Lineweight = this.Lineweight,
+                Transparency = (Transparency) this.Transparency.Clone(),
+                LinetypeScale = this.LinetypeScale,
+                Normal = this.Normal,
+                IsVisible = this.IsVisible,
                 //Mesh properties
                 SubdivisionLevel = this.subdivisionLevel
             };
+
+            foreach (XData data in this.XData.Values)
+                entity.XData.Add((XData) data.Clone());
+
+            return entity;
         }
 
         #endregion

@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
@@ -31,7 +31,6 @@ namespace netDxf.Entities
     public class MeshEdge :
         ICloneable
     {
-
         #region private fields
 
         private int startVertexIndex;
@@ -47,15 +46,25 @@ namespace netDxf.Entities
         /// </summary>
         /// <param name="startVertexIndex">The edge start vertex index.</param>
         /// <param name="endVertexIndex">The edge end vertex index.</param>
-        /// <param name="crease">The highest smoothing level at which the crease is retained.</param>
-        public MeshEdge(int startVertexIndex, int endVertexIndex, double crease = 0.0)
+        public MeshEdge(int startVertexIndex, int endVertexIndex)
+            : this(startVertexIndex, endVertexIndex, 0.0)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <c>MeshEdge</c> class.
+        /// </summary>
+        /// <param name="startVertexIndex">The edge start vertex index.</param>
+        /// <param name="endVertexIndex">The edge end vertex index.</param>
+        /// <param name="crease">The highest smoothing level at which the crease is retained  (default: 0.0).</param>
+        public MeshEdge(int startVertexIndex, int endVertexIndex, double crease)
         {
             if (startVertexIndex < 0)
-                throw (new ArgumentOutOfRangeException("startVertexIndex", startVertexIndex, "The vertex index must be positive."));
+                throw new ArgumentOutOfRangeException(nameof(startVertexIndex), startVertexIndex, "The vertex index must be positive.");
             this.startVertexIndex = startVertexIndex;
 
             if (endVertexIndex < 0)
-                throw (new ArgumentOutOfRangeException("endVertexIndex", endVertexIndex, "The vertex index must be positive."));
+                throw new ArgumentOutOfRangeException(nameof(endVertexIndex), endVertexIndex, "The vertex index must be positive.");
             this.endVertexIndex = endVertexIndex;
             this.crease = crease < 0.0 ? -1.0 : crease;
         }
@@ -76,7 +85,7 @@ namespace netDxf.Entities
             set
             {
                 if (value < 0)
-                    throw (new ArgumentOutOfRangeException("value", value, "The vertex index must be positive."));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The vertex index must be must be equals or greater than zero.");
                 this.startVertexIndex = value;
             }
         }
@@ -90,7 +99,7 @@ namespace netDxf.Entities
             set
             {
                 if (value < 0)
-                    throw (new ArgumentOutOfRangeException("value", value, "The vertex index must be positive."));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "The vertex index must be must be equals or greater than zero.");
                 this.endVertexIndex = value;
             }
         }
@@ -100,7 +109,7 @@ namespace netDxf.Entities
         /// </summary>
         /// <remarks>
         /// Enter a value of 0 to remove an existing crease (no edge sharpening).<br/>
-        /// Enter a value of -1 (any negative number will be reset to -1) to specify that the crease is always retained, even if the object or subobject is smoothed or refined.
+        /// Enter a value of -1 (any negative number will be reset to -1) to specify that the crease is always retained, even if the object or sub-object is smoothed or refined.
         /// </remarks>
         public double Crease
         {
@@ -140,8 +149,6 @@ namespace netDxf.Entities
             return new MeshEdge(this.startVertexIndex, this.endVertexIndex, this.crease);
         }
 
-
         #endregion
-
     }
 }

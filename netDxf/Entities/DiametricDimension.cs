@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2014 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2013 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2019 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,11 +16,12 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
 
 using System;
+using System.Diagnostics;
 using netDxf.Blocks;
 using netDxf.Tables;
 
@@ -34,25 +35,59 @@ namespace netDxf.Entities
     {
         #region private fields
 
-        private double diameter;
-        private double rotation;
-        private Vector3 center;
-        private Vector3 circunferenceRef;
+        private Vector2 center;
+        private Vector2 refPoint;
 
         #endregion
 
         #region constructors
 
         /// <summary>
-        /// Initializes a new instance of the <c>RadialDimension</c> class.
+        /// Initializes a new instance of the <c>DiametricDimension</c> class.
         /// </summary>
         public DiametricDimension()
-            : this(Vector3.Zero, 1.0, 0.0)
+            : this(Vector2.Zero, Vector2.UnitX, DimensionStyle.Default)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <c>RadialDimension</c> class.
+        /// Initializes a new instance of the <c>DiametricDimension</c> class.
+        /// </summary>
+        /// <param name="arc"><see cref="Arc">Arc</see> to measure.</param>
+        /// <param name="rotation">Rotation in degrees of the dimension line.</param>
+        /// <remarks>The center point and the definition point define the distance to be measure.</remarks>
+        public DiametricDimension(Arc arc, double rotation)
+            : this(arc, rotation, DimensionStyle.Default)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <c>DiametricDimension</c> class.
+        /// </summary>
+        /// <param name="arc"><see cref="Arc">Arc</see> to measure.</param>
+        /// <param name="rotation">Rotation in degrees of the dimension line.</param>
+        /// <param name="style">The <see cref="DimensionStyle">style</see> to use with the dimension.</param>
+        /// <remarks>The center point and the definition point define the distance to be measure.</remarks>
+        public DiametricDimension(Arc arc, double rotation, DimensionStyle style)
+            : base(DimensionType.Diameter)
+        {
+            if (arc == null)
+                throw new ArgumentNullException(nameof(arc));
+
+            Vector3 ocsCenter = MathHelper.Transform(arc.Center, arc.Normal, CoordinateSystem.World, CoordinateSystem.Object);
+            this.center = new Vector2(ocsCenter.X, ocsCenter.Y);
+            this.refPoint = Vector2.Polar(this.center, arc.Radius, rotation*MathHelper.DegToRad);
+
+            if (style == null)
+                throw new ArgumentNullException(nameof(style));
+            this.Style = style;
+            this.Normal = arc.Normal;
+            this.Elevation = ocsCenter.Z;
+            this.Update();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <c>DiametricDimension</c> class.
         /// </summary>
         /// <param name="circle"><see cref="Circle">Circle</see> to measure.</param>
         /// <param name="rotation">Rotation in degrees of the dimension line.</param>
@@ -63,85 +98,61 @@ namespace netDxf.Entities
         }
 
         /// <summary>
-        /// Initializes a new instance of the <c>RadialDimension</c> class.
+        /// Initializes a new instance of the <c>DiametricDimension</c> class.
         /// </summary>
         /// <param name="circle"><see cref="Circle">Circle</see> to measure.</param>
         /// <param name="rotation">Rotation in degrees of the dimension line.</param>
         /// <param name="style">The <see cref="DimensionStyle">style</see> to use with the dimension.</param>
         /// <remarks>The center point and the definition point define the distance to be measure.</remarks>
         public DiametricDimension(Circle circle, double rotation, DimensionStyle style)
-            : this(circle.Center, 2*circle.Radius, rotation, style )
-        {
-            this.normal = circle.Normal;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <c>RadialDimension</c> class.
-        /// </summary>
-        /// <param name="centerPoint">Center <see cref="Vector3">point</see> of the circunference.</param>
-        /// <param name="diameter">Diameter value.</param>
-        /// <param name="rotation">Rotation in degrees of the dimension line.</param>
-        /// <remarks>The center point and the definition point define the distance to be measure.</remarks>
-        public DiametricDimension(Vector2 centerPoint, double diameter, double rotation)
-            : this(new Vector3(centerPoint.X, centerPoint.Y, 0.0), diameter, rotation, DimensionStyle.Default)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <c>RadialDimension</c> class.
-        /// </summary>
-        /// <param name="centerPoint">Center <see cref="Vector3">point</see> of the circunference.</param>
-        /// <param name="diameter">Diameter value.</param>
-        /// <param name="rotation">Rotation in degrees of the dimension line.</param>
-        /// <remarks>The center point and the definition point define the distance to be measure.</remarks>
-        public DiametricDimension(Vector3 centerPoint, double diameter, double rotation)
-            : this(centerPoint, diameter, rotation, DimensionStyle.Default)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <c>RadialDimension</c> class.
-        /// </summary>
-        /// <param name="centerPoint">Center <see cref="Vector3">point</see> of the circunference.</param>
-        /// <param name="diameter">Diameter value.</param>
-        /// <param name="rotation">Rotation in degrees of the dimension line.</param>
-        /// <param name="style">The <see cref="DimensionStyle">style</see> to use with the dimension.</param>
-        /// <remarks>The center point and the definition point define the distance to be measure.</remarks>
-        public DiametricDimension(Vector2 centerPoint, double diameter, double rotation, DimensionStyle style)
-            : this(new Vector3(centerPoint.X, centerPoint.Y, 0.0), diameter, rotation, style)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <c>RadialDimension</c> class.
-        /// </summary>
-        /// <param name="centerPoint">Center <see cref="Vector3">point</see> of the circunference.</param>
-        /// <param name="diameter">Diameter value.</param>
-        /// <param name="rotation">Rotation in degrees of the dimension line.</param>
-        /// <param name="style">The <see cref="DimensionStyle">style</see> to use with the dimension.</param>
-        /// <remarks>The center point and the definition point define the distance to be measure.</remarks>
-        public DiametricDimension(Vector3 centerPoint, double diameter, double rotation, DimensionStyle style)
             : base(DimensionType.Diameter)
         {
-            this.center = centerPoint;
-            this.diameter = diameter;
-            this.rotation = MathHelper.NormalizeAngle(rotation);
+            if (circle == null)
+                throw new ArgumentNullException(nameof(circle));
+
+            Vector3 ocsCenter = MathHelper.Transform(circle.Center, circle.Normal, CoordinateSystem.World, CoordinateSystem.Object);
+            this.center = new Vector2(ocsCenter.X, ocsCenter.Y);
+            this.refPoint = Vector2.Polar(this.center, circle.Radius, rotation*MathHelper.DegToRad);
+
             if (style == null)
-                throw new ArgumentNullException("style", "The Dimension style cannot be null.");
-            this.style = style;
+                throw new ArgumentNullException(nameof(style));
+            this.Style = style;
+            this.Normal = circle.Normal;
+            this.Elevation = ocsCenter.Z;
+            this.Update();
         }
 
-        #endregion
-
-        #region internal properties
+        /// <summary>
+        /// Initializes a new instance of the <c>DiametricDimension</c> class.
+        /// </summary>
+        /// <param name="centerPoint">Center <see cref="Vector2">point</see> of the circumference.</param>
+        /// <param name="referencePoint"><see cref="Vector2">Point</see> on circle or arc.</param>
+        /// <remarks>The center point and the definition point define the distance to be measure.</remarks>
+        public DiametricDimension(Vector2 centerPoint, Vector2 referencePoint)
+            : this(centerPoint, referencePoint, DimensionStyle.Default)
+        {
+        }
 
         /// <summary>
-        /// Definition point for diameter, radius, and angular dimensions (in WCS).
+        /// Initializes a new instance of the <c>DiametricDimension</c> class.
         /// </summary>
-        internal Vector3 CircunferencePoint
+        /// <param name="centerPoint">Center <see cref="Vector2">point</see> of the circumference.</param>
+        /// <param name="referencePoint"><see cref="Vector2">Point</see> on circle or arc.</param>
+        /// <param name="style">The <see cref="DimensionStyle">style</see> to use with the dimension.</param>
+        /// <remarks>The center point and the definition point define the distance to be measure.</remarks>
+        public DiametricDimension(Vector2 centerPoint, Vector2 referencePoint, DimensionStyle style)
+            : base(DimensionType.Diameter)
         {
-            get { return circunferenceRef; }
-            set { circunferenceRef = value; }
+            if(Vector2.Equals(centerPoint, referencePoint))
+                throw new ArgumentException("The center and the reference point cannot be the same");
+            this.center = centerPoint;
+            this.refPoint = referencePoint;
+
+            if (style == null)
+                throw new ArgumentNullException(nameof(style));
+            this.Style = style;
+
+            this.Update();
         }
 
         #endregion
@@ -149,38 +160,70 @@ namespace netDxf.Entities
         #region public properties
 
         /// <summary>
-        /// Gets or sets the center <see cref="Vector3">point</see> of the circunference.
+        /// Gets or sets the center <see cref="Vector2">point</see> of the circumference in OCS (object coordinate system).
         /// </summary>
-        public Vector3 CenterPoint
+        public Vector2 CenterPoint
         {
             get { return this.center; }
             set { this.center = value; }
         }
 
         /// <summary>
-        /// Gets or sets the diameter of the circunference.
+        /// Gets or sets the <see cref="Vector2">point</see> on circumference or arc in OCS (object coordinate system).
         /// </summary>
-        public double Diameter
+        public Vector2 ReferencePoint
         {
-            get { return this.diameter; }
-            set { this.diameter = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the rotation of the dimension line.
-        /// </summary>
-        public double Rotation
-        {
-            get { return this.rotation; }
-            set { this.rotation = MathHelper.NormalizeAngle(value); }
+            get { return this.refPoint; }
+            set { this.refPoint = value; }
         }
 
         /// <summary>
         /// Actual measurement.
         /// </summary>
-        public override double Value
+        public override double Measurement
         {
-            get { return this.diameter; }
+            get { return 2*Vector2.Distance(this.center, this.refPoint); }
+        }
+
+        #endregion
+
+        #region public methods
+
+        /// <summary>
+        /// Calculates the reference point and dimension offset from a point along the dimension line.
+        /// </summary>
+        /// <param name="point">Point along the dimension line.</param>
+        public void SetDimensionLinePosition(Vector2 point)
+        {
+            double radius = Vector2.Distance(this.center, this.refPoint);
+            double rotation = Vector2.Angle(this.center, point);
+
+            this.defPoint = Vector2.Polar(this.center, -radius, rotation);
+            this.refPoint = Vector2.Polar(this.center, radius, rotation);
+
+            if (!this.TextPositionManuallySet)
+            {
+                DimensionStyleOverride styleOverride;
+                double textGap = this.Style.TextOffset;
+                if (this.StyleOverrides.TryGetValue(DimensionStyleOverrideType.TextOffset, out styleOverride))
+                {
+                    textGap = (double)styleOverride.Value;
+                }
+                double scale = this.Style.DimScaleOverall;
+                if (this.StyleOverrides.TryGetValue(DimensionStyleOverrideType.DimScaleOverall, out styleOverride))
+                {
+                    scale = (double)styleOverride.Value;
+                }
+                double arrowSize = this.Style.ArrowSize;
+                if (this.StyleOverrides.TryGetValue(DimensionStyleOverrideType.ArrowSize, out styleOverride))
+                {
+                    arrowSize = (double)styleOverride.Value;
+                }
+
+                Vector2 vec = Vector2.Normalize(this.refPoint - this.center);
+                double minOffset = (2 * arrowSize + textGap) * scale;
+                this.textRefPoint = this.refPoint + minOffset * vec;
+            }
         }
 
         #endregion
@@ -188,91 +231,110 @@ namespace netDxf.Entities
         #region overrides
 
         /// <summary>
-        /// Format the value for the dimension text.
+        /// Moves, scales, and/or rotates the current entity given a 3x3 transformation matrix and a translation vector.
         /// </summary>
-        /// <param name="dimValue">Dimension value.</param>
-        /// <returns>The formated text.</returns>
-        internal override string FormatDimensionText(double dimValue)
+        /// <param name="transformation">Transformation matrix.</param>
+        /// <param name="translation">Translation vector.</param>
+        /// <remarks>
+        /// Non-uniform and zero scaling local to the dimension entity are not supported.<br />
+        /// The transformation will not be applied if the resulting center and reference points are the same.<br />
+        /// Matrix3 adopts the convention of using column vectors to represent a transformation matrix.
+        /// </remarks>
+        public override void TransformBy(Matrix3 transformation, Vector3 translation)
         {
-            return Symbols.Diameter + base.FormatDimensionText(dimValue);
+            Vector3 newNormal = transformation * this.Normal;
+            if (Vector3.Equals(Vector3.Zero, newNormal)) newNormal = this.Normal;
+
+            Matrix3 transOW = MathHelper.ArbitraryAxis(this.Normal);
+            Matrix3 transWO = MathHelper.ArbitraryAxis(newNormal).Transpose();
+
+            Vector3 v = transOW * new Vector3(this.CenterPoint.X, this.CenterPoint.Y, this.Elevation);
+            v = transformation * v + translation;
+            v = transWO * v;
+            Vector2 newCenter = new Vector2(v.X, v.Y);
+            double newElevation = v.Z;
+
+            v = transOW * new Vector3(this.ReferencePoint.X, this.ReferencePoint.Y, this.Elevation);
+            v = transformation * v + translation;
+            v = transWO * v;
+            Vector2 newRefPoint = new Vector2(v.X, v.Y);
+
+            if(Vector2.Equals(newCenter, newRefPoint))
+            {
+                Debug.Assert(false, "The transformation cannot be applied, the resulting center and reference points are the same.");
+                return;
+            }
+
+            v = transOW * new Vector3(this.textRefPoint.X, this.textRefPoint.Y, this.Elevation);
+            v = transformation * v + translation;
+            v = transWO * v;
+            this.textRefPoint = new Vector2(v.X, v.Y);
+
+            v = transOW * new Vector3(this.defPoint.X, this.defPoint.Y, this.Elevation);
+            v = transformation * v + translation;
+            v = transWO * v;
+            this.defPoint = new Vector2(v.X, v.Y);
+
+            this.CenterPoint = newCenter;
+            this.ReferencePoint = newRefPoint;
+            this.Elevation = newElevation;
+            this.Normal = newNormal;
         }
 
         /// <summary>
-        /// Gets the the block that contains the entities that make up the dimension picture.
+        /// Calculate the dimension reference points.
         /// </summary>
-        /// <param name="name">Name to be asigned to the generated block.</param>
-        /// <returns>The block that represents the actual dimension.</returns>
-        internal override Block BuildBlock(string name)
+        protected override void CalculateReferencePoints()
         {
-            // we will build the dimension block in object coordinates with normal the dimension normal
-            Vector3 refPoint = MathHelper.Transform(this.center, this.normal,
-                                                    MathHelper.CoordinateSystem.World,
-                                                    MathHelper.CoordinateSystem.Object);
+            if(Vector2.Equals(this.center, this.refPoint))
+                throw new ArgumentException("The center and the reference point cannot be the same");
 
-            Vector2 centerRef = new Vector2(refPoint.X, refPoint.Y);
+            double measure = this.Measurement;
+            Vector2 centerRef = this.center;
+            Vector2 ref1 = this.refPoint;
 
-            double elev = refPoint.Z;
-            double refRotation = this.rotation*MathHelper.DegToRad;
+            double angleRef = Vector2.Angle(centerRef, ref1);
 
-            Vector2 firstRef = Vector2.Polar(centerRef, this.diameter * 0.5, refRotation);
-            this.definitionPoint = MathHelper.Transform(new Vector3(firstRef.X, firstRef.Y, elev), this.normal,
-                                                           MathHelper.CoordinateSystem.Object,
-                                                           MathHelper.CoordinateSystem.World);
+            this.defPoint = Vector2.Polar(ref1, -measure, angleRef);
 
-            Vector2 secondRef = Vector2.Polar(centerRef, -this.diameter * 0.5, refRotation);
-            this.circunferenceRef = MathHelper.Transform(new Vector3(secondRef.X, secondRef.Y, elev), this.normal,
-                                                           MathHelper.CoordinateSystem.Object,
-                                                           MathHelper.CoordinateSystem.World);
-            // reference points
-            Layer defPoints = new Layer("Defpoints") { Plot = false };
-            Point startRef = new Point(firstRef) { Layer = defPoints };
-            Point endRef = new Point(secondRef) { Layer = defPoints };
+            if (this.TextPositionManuallySet)
+            {
+                this.SetDimensionLinePosition(this.textRefPoint);
+            }
+            else
+            {
+                DimensionStyleOverride styleOverride;
 
-            // dimension lines
-            Line dimLine = new Line(firstRef, secondRef);
+                double textGap = this.Style.TextOffset;
+                if (this.StyleOverrides.TryGetValue(DimensionStyleOverrideType.TextOffset, out styleOverride))
+                {
+                    textGap = (double)styleOverride.Value;
+                }
+                double scale = this.Style.DimScaleOverall;
+                if (this.StyleOverrides.TryGetValue(DimensionStyleOverrideType.DimScaleOverall, out styleOverride))
+                {
+                    scale = (double)styleOverride.Value;
+                }
+                double arrowSize = this.Style.ArrowSize;
+                if (this.StyleOverrides.TryGetValue(DimensionStyleOverrideType.ArrowSize, out styleOverride))
+                {
+                    arrowSize = (double)styleOverride.Value;
+                }
 
-            // center cross
-            double dist = Math.Abs(this.style.DIMCEN);
-            Vector2 c1 = new Vector2(0, -dist) + centerRef;
-            Vector2 c2 = new Vector2(0, dist) + centerRef;
-            Line crossLine1 = new Line(c1, c2);
-            c1 = new Vector2(-dist, 0) + centerRef;
-            c2 = new Vector2(dist, 0) + centerRef;
-            Line crossLine2 = new Line(c1, c2);
+                Vector2 vec = Vector2.Normalize(this.refPoint - this.center);
+                double minOffset = (2 * arrowSize + textGap) * scale;
+                this.textRefPoint = this.refPoint + minOffset * vec;
+            }
+        }
 
-            // dimension arrows
-            Vector2 arrowRef1 = Vector2.Polar(secondRef, this.style.DIMASZ, refRotation);
-            Solid arrow1 = new Solid(secondRef,
-                                    Vector2.Polar(arrowRef1, -this.style.DIMASZ / 6, refRotation + MathHelper.HalfPI),
-                                    Vector2.Polar(arrowRef1, this.style.DIMASZ / 6, refRotation + MathHelper.HalfPI),
-                                    secondRef);
-            Vector2 arrowRef2 = Vector2.Polar(firstRef, -this.style.DIMASZ, refRotation);
-            Solid arrow2 = new Solid(firstRef,
-                                    Vector2.Polar(arrowRef2, this.style.DIMASZ / 6, refRotation + MathHelper.HalfPI),
-                                    Vector2.Polar(arrowRef2, -this.style.DIMASZ / 6, refRotation + MathHelper.HalfPI),
-                                    firstRef);
-
-            // dimension text
-            this.midTextPoint = new Vector3(centerRef.X, centerRef.Y, elev); // this value is in OCS
-            MText text = new MText(this.FormatDimensionText(this.Value),
-                                   Vector2.Polar(centerRef, this.style.DIMGAP, refRotation + MathHelper.HalfPI),
-                                   this.style.DIMTXT, 0.0, this.style.TextStyle)
-                             {
-                                 AttachmentPoint = MTextAttachmentPoint.BottomCenter,
-                                 Rotation = refRotation*MathHelper.RadToDeg
-                             };
-
-            Block dim = new Block(name, false);
-            dim.Entities.Add(startRef);
-            dim.Entities.Add(endRef);
-            dim.Entities.Add(dimLine);
-            dim.Entities.Add(crossLine1);
-            dim.Entities.Add(crossLine2);
-            dim.Entities.Add(arrow1);
-            dim.Entities.Add(arrow2);
-            dim.Entities.Add(text);
-            this.block = dim;
-            return dim;
+        /// <summary>
+        /// Gets the block that contains the entities that make up the dimension picture.
+        /// </summary>
+        /// <param name="name">Name to be assigned to the generated block.</param>
+        /// <returns>The block that represents the actual dimension.</returns>
+        protected override Block BuildBlock(string name)
+        {
+            return DimensionBlock.Build(this, name);
         }
 
         /// <summary>
@@ -281,29 +343,47 @@ namespace netDxf.Entities
         /// <returns>A new DiametricDimension that is a copy of this instance.</returns>
         public override object Clone()
         {
-            return new DiametricDimension
+            DiametricDimension entity = new DiametricDimension
             {
                 //EntityObject properties
-                Color = this.color,
-                Layer = this.layer,
-                LineType = this.lineType,
-                Lineweight = this.lineweight,
-                LineTypeScale = this.lineTypeScale,
-                Normal = this.normal,
-                XData = this.xData,
+                Layer = (Layer) this.Layer.Clone(),
+                Linetype = (Linetype) this.Linetype.Clone(),
+                Color = (AciColor) this.Color.Clone(),
+                Lineweight = this.Lineweight,
+                Transparency = (Transparency) this.Transparency.Clone(),
+                LinetypeScale = this.LinetypeScale,
+                Normal = this.Normal,
+                IsVisible = this.IsVisible,
                 //Dimension properties
-                Style = this.style,
-                AttachmentPoint = this.attachmentPoint,
-                LineSpacingStyle = this.lineSpacingStyle,
-                LineSpacingFactor = this.lineSpacing,
+                Style = (DimensionStyle) this.Style.Clone(),
+                DefinitionPoint = this.DefinitionPoint,
+                TextReferencePoint = this.TextReferencePoint,
+                TextPositionManuallySet = this.TextPositionManuallySet,
+                TextRotation = this.TextRotation,
+                AttachmentPoint = this.AttachmentPoint,
+                LineSpacingStyle = this.LineSpacingStyle,
+                LineSpacingFactor = this.LineSpacingFactor,
+                UserText = this.UserText,
+                Elevation = this.Elevation,
                 //DiametricDimension properties
                 CenterPoint = this.center,
-                Diameter = this.diameter,
-                Rotation = this.rotation
+                ReferencePoint = this.refPoint
             };
+
+            foreach (DimensionStyleOverride styleOverride in this.StyleOverrides.Values)
+            {
+                ICloneable value = styleOverride.Value as ICloneable;
+                object copy = value != null ? value.Clone() : styleOverride.Value;
+
+                entity.StyleOverrides.Add(new DimensionStyleOverride(styleOverride.Type, copy));
+            }
+
+            foreach (XData data in this.XData.Values)
+                entity.XData.Add((XData) data.Clone());
+
+            return entity;
         }
 
         #endregion
-
     }
 }

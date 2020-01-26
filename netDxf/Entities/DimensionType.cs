@@ -1,7 +1,7 @@
-﻿#region netDxf, Copyright(C) 2012 Daniel Carvajal, Licensed under LGPL.
+﻿#region netDxf library, Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 
 //                        netDxf library
-// Copyright (C) 2012 Daniel Carvajal (haplokuon@gmail.com)
+// Copyright (C) 2009-2016 Daniel Carvajal (haplokuon@gmail.com)
 // 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,11 +16,9 @@
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #endregion
-
-using System;
 
 namespace netDxf.Entities
 {
@@ -33,78 +31,35 @@ namespace netDxf.Entities
         /// Rotated, horizontal, or vertical.
         /// </summary>
         Linear = 0,
+
         /// <summary>
         /// Aligned.
         /// </summary>
         Aligned = 1,
+
         /// <summary>
         /// Angular 2 lines.
         /// </summary>
         Angular = 2,
+
         /// <summary>
         /// Diameter.
         /// </summary>
         Diameter = 3,
+
         /// <summary>
         /// Radius.
         /// </summary>
         Radius = 4,
+
         /// <summary>
         /// Angular 3 points.
         /// </summary>
         Angular3Point = 5,
+
         /// <summary>
         /// Ordinate.
         /// </summary>
-        Ordinate = 6,
+        Ordinate = 6
     }
-
-    /// <summary>
-    /// Dimension type.
-    /// </summary>
-    [Flags]
-    internal enum DimensionTypeFlag
-    {
-        /// <summary>
-        /// Rotated, horizontal, or vertical.
-        /// </summary>
-        Linear = 0,
-        /// <summary>
-        /// Aligned.
-        /// </summary>
-        Aligned = 1,
-        /// <summary>
-        /// Angular 2 lines.
-        /// </summary>
-        Angular = 2,
-        /// <summary>
-        /// Diameter.
-        /// </summary>
-        Diameter = 3,
-        /// <summary>
-        /// Radius.
-        /// </summary>
-        Radius = 4,
-        /// <summary>
-        /// Angular 3 points.
-        /// </summary>
-        Angular3Point = 5,
-        /// <summary>
-        /// Ordinate.
-        /// </summary>
-        Ordinate = 6,
-        /// <summary>
-        /// Indicates that the block reference (group code 2) is referenced by this dimension only.
-        /// </summary>
-        BlockReference = 32,
-        /// <summary>
-        /// Ordinate type. This is a bit value (bit 7) used only with integer value 6. If set, ordinate is X-type; if not set, ordinate is Y-type.
-        /// </summary>
-        OrdinteType = 64,
-        /// <summary>
-        /// This is a bit value (bit 8) added to the other group 70 values if the dimension text has been positioned at a user-defined location rather than at the default location.
-        /// </summary>
-        UserTextPosition = 128
-    }
-
 }
