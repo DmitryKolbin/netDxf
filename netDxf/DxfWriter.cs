@@ -64,6 +64,28 @@ namespace netDxf
             if (this.doc.DrawingVariables.AcadVer < DxfVersion.AutoCad2000)
                 throw new NotSupportedException("Only AutoCad2000 and newer dxf versions are supported.");
 
+            //2D dxf viewport for autocad
+            Vector2 polymin = new Vector2(double.MaxValue, double.MaxValue);
+            Vector2 polymax = new Vector2(double.MinValue, double.MinValue);
+            foreach (var poly in document.LwPolylines)
+            {
+                foreach (var v in poly.Vertexes)
+                {
+                    if (v.Location.X > polymax.X)
+                        polymax.X = v.Location.X;
+                    if (v.Location.X < polymin.X)
+                        polymin.X = v.Location.X;
+
+                    if (v.Location.Y > polymax.Y)
+                        polymax.Y = v.Location.Y;
+                    if (v.Location.Y < polymin.Y)
+                        polymin.Y = v.Location.Y;
+                }
+            }
+
+            doc.DrawingVariables.ExtMin = new Vector3(polymin.X, polymin.Y, 0);
+            doc.DrawingVariables.ExtMax = new Vector3(polymax.X, polymax.Y, 0);
+
             this.encodedStrings = new Dictionary<string, string>();
 
             // create the default PaperSpace layout in case it does not exist. The ModelSpace layout always exists
@@ -575,6 +597,24 @@ namespace netDxf
                 case HeaderVariableCode.TdinDwg:
                     this.chunk.Write(9, name);
                     this.chunk.Write(variable.CodeGroup, ((TimeSpan) value).TotalDays);
+                    break;
+                case HeaderVariableCode.ExtMin:
+                    {
+                        this.chunk.Write(9, name);
+                        var v = (Vector3)value;
+                        this.chunk.Write(10, v.X);
+                        this.chunk.Write(20, v.Y);
+                        this.chunk.Write(30, v.Z);
+                    }
+                    break;
+                case HeaderVariableCode.ExtMax:
+                    {
+                        this.chunk.Write(9, name);
+                        var v = (Vector3)value;
+                        this.chunk.Write(10, v.X);
+                        this.chunk.Write(20, v.Y);
+                        this.chunk.Write(30, v.Z);
+                    }
                     break;
             }
         }

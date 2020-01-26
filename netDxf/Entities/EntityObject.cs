@@ -170,8 +170,8 @@ namespace netDxf.Entities
             get { return this.lineTypeScale; }
             set
             {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException("value", value, "The linetype scale must be greater than zero.");
+                //if (value <= 0)
+                //    throw new ArgumentOutOfRangeException("value", value, "The linetype scale must be greater than zero.");
                 this.lineTypeScale = value;
             }
         }

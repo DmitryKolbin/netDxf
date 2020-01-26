@@ -69,8 +69,8 @@ namespace netDxf.Entities
         public AttributeDefinition(string tag, TextStyle style)
             : base(EntityType.AttributeDefinition, DxfObjectCode.AttributeDefinition)
         {
-            if (tag.Contains(" "))
-                throw new ArgumentException("The tag string cannot contain spaces.", "tag");
+            //if (tag.Contains(" "))
+            //    throw new ArgumentException("The tag string cannot contain spaces.", "tag");
             this.tag = tag;
             this.flags = AttributeFlags.Visible;
             this.text = string.Empty;

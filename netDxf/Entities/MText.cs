@@ -448,6 +448,7 @@ namespace netDxf.Entities
                                 rawText.Append('°');
                                 break;
                             case 'p':
+                            case 'P':
                                 rawText.Append('±');
                                 break;
                         }

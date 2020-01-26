@@ -97,8 +97,9 @@ namespace netDxf
             short result;
             if (short.TryParse(this.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
                 return result;
-
-            throw new Exception(string.Format("Value {0} not valid at line {1}", this.value, this.currentPosition));
+            //TODO add warning in log
+            return short.MaxValue;
+            //throw new Exception(string.Format("Value {0} not valid at line {1}", this.value, this.currentPosition));
         }
 
         public int ReadInt()

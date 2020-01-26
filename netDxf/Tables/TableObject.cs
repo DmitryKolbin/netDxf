@@ -38,7 +38,7 @@ namespace netDxf.Tables
         /// <summary>
         /// Gets the array of characters not supported as table object names.
         /// </summary>
-        public static readonly string[] InvalidCharacters = { "\\", "<", ">", "/", "?", "\"", ":", ";", "*", "|", ",", "=", "`" };
+        public static readonly string[] InvalidCharacters = { /*"\\", "<", ">", "/", "?", "\"", ":", ";", "*", "|", ",", "=", "`"*/ };
         protected bool reserved;
         protected string name;
 

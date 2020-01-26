@@ -41,6 +41,7 @@ namespace netDxf.Header
         #region constants
 
         public static readonly Dictionary<string, int> Allowed = HeaderVariablesCodeGroup();
+        public static readonly List<string> AllowedExt = new List<string> { HeaderVariableCode.ExtMin, HeaderVariableCode.ExtMax };
 
         #endregion
 
@@ -48,9 +49,10 @@ namespace netDxf.Header
 
         public HeaderVariable(string name, object value)
         {
-            if (!Allowed.ContainsKey(name))
+            if (!Allowed.ContainsKey(name) && !AllowedExt.Contains(name))
                 throw new ArgumentOutOfRangeException("name", name, string.Format("Variable name {0} not defined.", name));
-            this.codeGroup = (short)Allowed[name];
+            if (Allowed.ContainsKey(name))
+                this.codeGroup = (short)Allowed[name];
             this.name = name;
             this.value = value;
         }

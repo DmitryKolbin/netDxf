@@ -86,6 +86,8 @@ namespace netDxf.Header
                 {HeaderVariableCode.TdUpdate, new HeaderVariable(HeaderVariableCode.TdUpdate, DateTime.Now)},
                 {HeaderVariableCode.TduUpdate, new HeaderVariable(HeaderVariableCode.TduUpdate, DateTime.UtcNow)},
                 {HeaderVariableCode.TdinDwg, new HeaderVariable(HeaderVariableCode.TdinDwg, new TimeSpan())},
+                {HeaderVariableCode.ExtMin, new HeaderVariable(HeaderVariableCode.ExtMin, new Vector3())},
+                {HeaderVariableCode.ExtMax, new HeaderVariable(HeaderVariableCode.ExtMax, new Vector3())},
             };
         }
 
@@ -537,6 +539,19 @@ namespace netDxf.Header
         {
             get { return (TimeSpan)this.variables[HeaderVariableCode.TdinDwg].Value; }
             set { this.variables[HeaderVariableCode.TdinDwg].Value = value; }
+        }
+
+
+        public Vector3 ExtMin
+        {
+            get { return (Vector3)this.variables[HeaderVariableCode.ExtMin].Value; }
+            set { this.variables[HeaderVariableCode.ExtMin].Value = value; }
+        }
+
+        public Vector3 ExtMax
+        {
+            get { return (Vector3)this.variables[HeaderVariableCode.ExtMax].Value; }
+            set { this.variables[HeaderVariableCode.ExtMax].Value = value; }
         }
 
         #endregion

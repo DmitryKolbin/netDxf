@@ -975,6 +975,8 @@ namespace netDxf
                     break;
                 case EntityType.Image:
                     Image image = (Image) entity;
+                    if (image.Definition == null)
+                        break;
                     image.Definition = this.imageDefs.Add(image.Definition);
                     this.imageDefs.References[image.Definition.Name].Add(image);
                     if(!image.Definition.Reactors.ContainsKey(image.Handle))

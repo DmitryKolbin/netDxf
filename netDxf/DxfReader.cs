@@ -123,11 +123,18 @@ namespace netDxf
                         // if the file is no utf-8 use the codepage provided by the dxf file
                         if (string.IsNullOrEmpty(dwgcodepage))
                             throw (new DxfException("Unknown codepage for non unicode file."));
-                        int codepage;
-                        if (!int.TryParse(dwgcodepage.Split('_')[1], out codepage))
-                            throw (new DxfException("Unknown codepage for non unicode file."));
-
-                        this.chunk = new TextCodeValueReader(new StreamReader(stream, Encoding.GetEncoding(codepage)));
+                        string cp = dwgcodepage;
+                        if (dwgcodepage.Contains("_"))
+                        {
+                            int codepage;
+                            if (!int.TryParse(dwgcodepage.Split('_')[1], out codepage))
+                                throw (new DxfException("Unknown codepage for non unicode file."));
+                            this.chunk = new TextCodeValueReader(new StreamReader(stream, Encoding.GetEncoding(codepage)));
+                        }
+                        else
+                        {
+                            this.chunk = new TextCodeValueReader(new StreamReader(stream, Encoding.GetEncoding(cp)));
+                        }
                     }
                 }
             }
@@ -209,7 +216,7 @@ namespace netDxf
             stream.Position = 0;
 
             // postprocess the image list to assign their image definitions.
-            foreach (KeyValuePair<Image, string> pair in this.imgToImgDefHandles)
+            /*foreach (KeyValuePair<Image, string> pair in this.imgToImgDefHandles)
             {
                 Image image = pair.Key;
                 image.Definition = this.imgDefHandles[pair.Value];
@@ -219,7 +226,7 @@ namespace netDxf
                 double factor = MathHelper.ConversionFactor(this.doc.DrawingVariables.InsUnits, this.doc.RasterVariables.Units);
                 image.Width *= factor;
                 image.Height *= factor;
-            }
+            }*/
 
             // postprocess the MLines to assign their MLineStyle
             foreach (KeyValuePair<MLine, string> pair in this.mLineToStyleNames)
@@ -240,7 +247,10 @@ namespace netDxf
                 }
                 else
                 {
-                    block = this.GetBlock(((BlockRecord) this.doc.GetObjectByHandle(pair.Value)).Name);
+                    var br = ((BlockRecord) this.doc.GetObjectByHandle(pair.Value));
+                    if (br == null)
+                        continue;
+                    block = this.GetBlock(br.Name);
                     layout = block.Record.Layout;
                 }
 
@@ -263,6 +273,9 @@ namespace netDxf
                 }
                 else
                 {
+                    if (pair.Key is AttributeDefinition)
+                        continue;
+
                     this.doc.ActiveLayout = layout.Name;
                     this.doc.AddEntity(pair.Key, false, false);
 
@@ -6382,8 +6395,24 @@ namespace netDxf
             }
 
             // if the layout has an invalid block record discard it
-            if (ownerRecord == null)
+            /*if (ownerRecord == null)
                 return null;
+            */
+            string ownerName = string.Empty;
+            if (ownerRecord == null)
+            {
+                if (this.doc.Blocks.Names.Count == 0 )
+                    return null;
+                foreach (var bname in this.doc.Blocks.Names){
+                    ownerName = bname;
+                    break;
+                }
+            }
+            else
+            {
+                ownerName = ownerRecord.Name;
+            }
+
 
             Layout layout = new Layout(name)
             {
@@ -6398,7 +6427,7 @@ namespace netDxf
                 UcsOrigin = ucsOrigin,
                 UcsXAxis = ucsXAxis,
                 UcsYAxis = ucsYAxis,
-                AssociatedBlock = this.doc.Blocks[ownerRecord.Name]
+                AssociatedBlock = this.doc.Blocks[ownerName]
             };
 
             if (tabOrder > 0)

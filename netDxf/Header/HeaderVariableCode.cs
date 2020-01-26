@@ -223,5 +223,9 @@ namespace netDxf.Header
         /// Cumulative editing time for this drawing.
         /// </summary>
         public const string TdinDwg = "$TDINDWG";
+
+        public const string ExtMin = "$EXTMIN";
+
+        public const string ExtMax = "$EXTMAX";
     }
 }
